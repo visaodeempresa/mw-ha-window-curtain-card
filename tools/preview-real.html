@@ -1,0 +1,62 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Config real do BASE-ALFA-01</title>
+<!-- Renderiza a configuração EXATA que ficou nos dashboards, com os estados
+     REAIS da casa (tools/real.json, extraído do HA). Prova que o que foi
+     publicado renderiza — não que a tela do HA está bonita, que é do dono. -->
+<style>
+  body{margin:0;padding:16px;background:#1a1e24;color:#ddd;
+    font:13px/1.4 -apple-system,system-ui,sans-serif;}
+  h2{font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:.6;margin:14px 0 8px;}
+  #card{max-width:430px;}
+  #planta{position:relative;width:560px;height:760px;border:2px solid #444;
+    border-radius:8px;background:linear-gradient(160deg,#39414c,#232830);}
+  .erro{color:#ff8a80;font-weight:700;}
+</style>
+<h2>Card — seção JANELA de /home-9-0-suite</h2>
+<div id="card"></div>
+<h2>Elementos — /planta-mw-01/planta</h2>
+<div id="planta"></div>
+<script src="../dist/mw-window-curtain-card.js"></script>
+<script src="http://localhost:8792/dist/mw-window-curtain-element.js"></script>
+<script>
+customElements.define("ha-card", class extends HTMLElement {
+  connectedCallback(){ if(this.shadowRoot) return;
+    this.attachShadow({mode:"open"}).innerHTML =
+      `<style>:host{display:block;box-sizing:border-box;}</style><slot></slot>`; }
+});
+const G={"mdi:fan":"🌀","mdi:power-socket-eu":"🔌","mdi:thermometer":"🌡",
+ "mdi:water-percent":"💧","mdi:window-open-variant":"▤","mdi:curtains":"▥",
+ "mdi:blinds-horizontal":"▦","mdi:chevron-up":"▲","mdi:chevron-down":"▼",
+ "mdi:stop":"■","mdi:information-outline":"ⓘ","mdi:arrow-u-left-top":"↩",
+ "mdi:arrow-split-horizontal":"⇔","mdi:power":"⏻"};
+customElements.define("ha-icon", class extends HTMLElement {
+  static get observedAttributes(){return["icon"];}
+  connectedCallback(){this._u();} attributeChangedCallback(){this._u();}
+  _u(){ if(!this.shadowRoot) this.attachShadow({mode:"open"});
+    const i=this.getAttribute("icon")||"";
+    this.shadowRoot.innerHTML=`<style>:host{display:inline-grid;place-items:center;
+      line-height:1;font-size:var(--mdc-icon-size,18px);}</style><span>${
+      G[i]||(i.startsWith("mdi:battery")?"▮":"◻︎")}</span>`; }
+});
+fetch("real.json").then(r=>r.json()).then(d=>{
+  const hass={states:d.states,entities:{},devices:{},areas:{},localize:k=>k,callService(){}};
+  try{
+    const c=document.createElement("mw-window-curtain-card");
+    c.setConfig(d.card); c.hass=hass;
+    document.getElementById("card").appendChild(c);
+  }catch(e){ document.getElementById("card").innerHTML=
+    `<p class="erro">CARD FALHOU: ${e.message}</p>`; }
+  const p=document.getElementById("planta");
+  d.elements.forEach(cfg=>{
+    try{
+      const el=document.createElement("mw-window-curtain-element");
+      const {left,top,...rest}=cfg;
+      el.setConfig(rest); el.style.left=left; el.style.top=top;
+      p.appendChild(el); el.hass=hass;
+    }catch(e){ const s=document.createElement("p");
+      s.className="erro"; s.textContent=`${cfg.title}: ${e.message}`; p.appendChild(s); }
+  });
+  window.__pronto = true;
+});
+</script>

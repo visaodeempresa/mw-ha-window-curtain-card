@@ -1,0 +1,327 @@
+{
+ "card": {
+  "type": "custom:mw-window-curtain-card",
+  "name": "JANELA DA SUÍTE",
+  "opener": "cover.0xbc026efffe0b49f4",
+  "sensor_left": "binary_sensor.suite_janela_esquerda_da_suite",
+  "sensor_right": "binary_sensor.suite_janela_direita_da_suite",
+  "temperature": "sensor.temperatura_da_janela_da_suite",
+  "humidity": "sensor.umidade_da_janela_da_suite",
+  "curtain": "cover.cortina_da_suite",
+  "curtain_texture": "veludo",
+  "curtain_paper": "violet-4",
+  "curtain_dark": true,
+  "paper": "violet-5",
+  "paper_dark": true,
+  "radius_bl": 52,
+  "accessories": [
+   {
+    "type": "exhaust",
+    "entity": "fan.exaustor_da_suite",
+    "label": "Exaustor",
+    "x": 86,
+    "y": 13,
+    "size": 26
+   },
+   {
+    "type": "socket",
+    "entity": "switch.t_janela_suit",
+    "label": "Tomada da janela",
+    "x": 5,
+    "y": 62,
+    "size": 22
+   }
+  ]
+ },
+ "elements": [
+  {
+   "type": "custom:mw-window-curtain-element",
+   "title": "🟨🪟 JANELA DA COZINHA",
+   "left": "76.5%",
+   "top": "13.0%",
+   "size": "5.5vh",
+   "opener": "cover.janela_da_cozinha",
+   "sensor_left": "binary_sensor.janela_esquerda_da_cozinha",
+   "sensor_right": "binary_sensor.janela_direita_da_cozinha",
+   "exhaust": "fan.exaustor_da_cozinha"
+  },
+  {
+   "type": "custom:mw-window-curtain-element",
+   "title": "🟧🪟 JANELA DA SALA",
+   "left": "72.0%",
+   "top": "31.0%",
+   "size": "6vh",
+   "panes": 4,
+   "slide": "out",
+   "opener": "cover.janela_esquerda_da_sala",
+   "opener_right": "cover.janela_direita_da_sala",
+   "sensor_left": "binary_sensor.janela_esquerda_da_sala",
+   "sensor_right": "binary_sensor.janela_direita_da_sala",
+   "curtain": "cover.cortina_da_sala",
+   "blackout": "cover.blackout_da_sala"
+  },
+  {
+   "type": "custom:mw-window-curtain-element",
+   "title": "⬛️🪟 JANELA DO ESCRITÓRIO",
+   "left": "75.5%",
+   "top": "50.0%",
+   "size": "5.5vh",
+   "opener": "cover.estado_da_janela_do_escritorio",
+   "sensor_left": "binary_sensor.janela_esquerda_do_escritorio",
+   "sensor_right": "binary_sensor.janela_direita_do_escritorio",
+   "blackout": "cover.blackout_do_escritorio"
+  },
+  {
+   "type": "custom:mw-window-curtain-element",
+   "title": "🟦🪟 JANELA DO QUARTO",
+   "left": "76.0%",
+   "top": "66.0%",
+   "size": "5.5vh",
+   "opener": "cover.janela_do_quarto",
+   "sensor_left": "binary_sensor.janela_esquerda_do_quarto",
+   "sensor_right": "binary_sensor.janela_direita_do_quarto",
+   "curtain": "cover.0xa4c1386cf98c2799"
+  },
+  {
+   "type": "custom:mw-window-curtain-element",
+   "title": "🟪🪟 JANELA DA SUÍTE",
+   "left": "76.0%",
+   "top": "82.0%",
+   "size": "5.5vh",
+   "opener": "cover.0xbc026efffe0b49f4",
+   "sensor_left": "binary_sensor.suite_janela_esquerda_da_suite",
+   "sensor_right": "binary_sensor.suite_janela_direita_da_suite",
+   "curtain": "cover.cortina_da_suite",
+   "exhaust": "fan.exaustor_da_suite"
+  }
+ ],
+ "states": {
+  "fan.exaustor_da_suite": {
+   "state": "on",
+   "attributes": {
+    "friendly_name": "🟪💨 EXAUSTOR DA SUÍTE",
+    "supported_features": 48
+   }
+  },
+  "fan.exaustor_da_cozinha": {
+   "state": "unavailable",
+   "attributes": {
+    "friendly_name": "🟨💨 EXAUSTOR DA COZINHA",
+    "supported_features": 48
+   }
+  },
+  "sun.sun": {
+   "state": "below_horizon",
+   "attributes": {
+    "next_dawn": "2026-08-12T09:03:48.606359+00:00",
+    "next_dusk": "2026-08-12T21:30:42.806504+00:00",
+    "next_midnight": "2026-08-13T03:17:00+00:00",
+    "next_noon": "2026-08-12T15:17:17+00:00",
+    "next_rising": "2026-08-12T09:27:34.151386+00:00",
+    "next_setting": "2026-08-12T21:06:57.532269+00:00",
+    "elevation": -15.33,
+    "azimuth": 78.49,
+    "rising": true,
+    "friendly_name": "Sun"
+   }
+  },
+  "cover.0xa4c1386cf98c2799": {
+   "state": "closed",
+   "attributes": {
+    "is_closed": true,
+    "current_position": 0,
+    "friendly_name": "🟦🪟 CORTINA DO QUARTO",
+    "supported_features": 15
+   }
+  },
+  "cover.janela_direita_da_sala": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 50,
+    "friendly_name": "🟧🪟 JANELA DIREITA DA SALA",
+    "supported_features": 15
+   }
+  },
+  "switch.t_janela_suit": {
+   "state": "on",
+   "attributes": {
+    "friendly_name": "🟪🪟⚡️ T JANELA SUIT"
+   }
+  },
+  "cover.janela_esquerda_da_sala": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 50,
+    "friendly_name": "🟧🪟 JANELA ESQUERDA DA SALA",
+    "supported_features": 15
+   }
+  },
+  "cover.janela_do_quarto": {
+   "state": "closed",
+   "attributes": {
+    "is_closed": true,
+    "current_position": 0,
+    "friendly_name": "🟦🪟 JANELA DO QUARTO",
+    "supported_features": 15
+   }
+  },
+  "cover.estado_da_janela_do_escritorio": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 100,
+    "friendly_name": "⬛️🪟 ESTADO DA JANELA DO ESCRITÓRIO",
+    "supported_features": 15
+   }
+  },
+  "cover.janela_da_cozinha": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 100,
+    "friendly_name": "🟨🪟 JANELA DA COZINHA",
+    "supported_features": 15
+   }
+  },
+  "cover.0xbc026efffe0b49f4": {
+   "state": "closed",
+   "attributes": {
+    "is_closed": true,
+    "current_position": 0,
+    "friendly_name": "🟪🪟 JANELA DA SUÍTE",
+    "supported_features": 15
+   }
+  },
+  "cover.blackout_do_escritorio": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 100,
+    "friendly_name": "⬛️🪟 BLACKOUT DO ESCRITÓRIO",
+    "supported_features": 15
+   }
+  },
+  "binary_sensor.janela_esquerda_do_escritorio": {
+   "state": "unavailable",
+   "attributes": {
+    "device_class": "window",
+    "friendly_name": "⬛️🪟 Janela Esquerda do Escritório"
+   }
+  },
+  "binary_sensor.janela_direita_do_escritorio": {
+   "state": "on",
+   "attributes": {
+    "device_class": "window",
+    "friendly_name": "⬛️🪟 Janela Direita do Escritório"
+   }
+  },
+  "binary_sensor.suite_janela_esquerda_da_suite": {
+   "state": "off",
+   "attributes": {
+    "device_class": "window",
+    "friendly_name": "🟪🪟 JANELA ESQUERDA DA SUÍTE"
+   }
+  },
+  "binary_sensor.suite_janela_direita_da_suite": {
+   "state": "off",
+   "attributes": {
+    "device_class": "window",
+    "friendly_name": "🟪🪟 JANELA DIREITA DA SUÍTE"
+   }
+  },
+  "binary_sensor.janela_esquerda_do_quarto": {
+   "state": "off",
+   "attributes": {
+    "device_class": "window",
+    "friendly_name": "🟦🪟 Janela Esquerda do Quarto"
+   }
+  },
+  "binary_sensor.janela_direita_do_quarto": {
+   "state": "off",
+   "attributes": {
+    "device_class": "window",
+    "friendly_name": "🟦🪟 Janela Direita do Quarto"
+   }
+  },
+  "binary_sensor.janela_direita_da_sala": {
+   "state": "on",
+   "attributes": {
+    "device_class": "opening",
+    "friendly_name": "🟧🪟 JANELA DIREITA DA SALA"
+   }
+  },
+  "binary_sensor.janela_esquerda_da_sala": {
+   "state": "on",
+   "attributes": {
+    "device_class": "opening",
+    "friendly_name": "🟧🪟 JANELA ESQUERDA DA SALA"
+   }
+  },
+  "sensor.temperatura_da_janela_da_suite": {
+   "state": "25.29",
+   "attributes": {
+    "state_class": "measurement",
+    "unit_of_measurement": "°C",
+    "device_class": "temperature",
+    "icon": "mdi:window-closed-variant",
+    "friendly_name": "🟪🪟🌡️ Temperatura da Janela da Suíte"
+   }
+  },
+  "sensor.umidade_da_janela_da_suite": {
+   "state": "53.36",
+   "attributes": {
+    "state_class": "measurement",
+    "unit_of_measurement": "%",
+    "device_class": "humidity",
+    "icon": "mdi:window-closed-variant",
+    "friendly_name": "🟪🪟💧 Umidade da Janela da Suíte"
+   }
+  },
+  "binary_sensor.janela_direita_da_cozinha": {
+   "state": "on",
+   "attributes": {
+    "device_class": "window",
+    "friendly_name": "🟨🪟 JANELA DIREITA DA COZINHA"
+   }
+  },
+  "binary_sensor.janela_esquerda_da_cozinha": {
+   "state": "off",
+   "attributes": {
+    "device_class": "window",
+    "friendly_name": "🟨🪟 Janela Esquerda da Cozinha"
+   }
+  },
+  "cover.cortina_da_suite": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 10,
+    "device_class": "curtain",
+    "friendly_name": "🟪🪟 CORTINA DA SUÍTE",
+    "supported_features": 15
+   }
+  },
+  "cover.blackout_da_sala": {
+   "state": "closed",
+   "attributes": {
+    "is_closed": true,
+    "current_position": 0,
+    "device_class": "curtain",
+    "friendly_name": "🟧🪟🌃 BLACKOUT DA SALA",
+    "supported_features": 15
+   }
+  },
+  "cover.cortina_da_sala": {
+   "state": "closed",
+   "attributes": {
+    "is_closed": true,
+    "current_position": 0,
+    "device_class": "curtain",
+    "friendly_name": "🟧🪟🏙️ CORTINA DA SALA",
+    "supported_features": 15
+   }
+  }
+ }
+}

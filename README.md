@@ -21,18 +21,15 @@ o blackout, o exaustor, a ventoinha solar, o tubo do ar-condicionado, as
 tomadas da parede — e a paisagem lá fora, que muda com a hora e com o que os
 sensores estão dizendo agora.
 
-```
-┌───────────────────────────────────────┐
-│ JANELA DA SALA                  ☀️ 💧 │
-│ aberta 50% · cortina 35% · blackout…  │
-│    ╔══════════════════════════════╗   │
-│ ▮  ║▐▐▐▐▐    ░░░░░░░░░    ▌▌▌▌▌   ║ ▮ │  ▐ cortina  ░ vidro
-│ ▮  ║▐▐▐▐▐    ░░🏙️░░░░░    ▌▌▌▌▌   ║ ▮ │  ▮ tomada / tubo do ar
-│    ╚══════════════════════════════╝   │
-│  ● Esq.  ● Dir.  🌡 23,4 °C  💧 52 %  │
-│  ▤ Janela   50% ──●───────  ▲ ■ ▼     │
-└───────────────────────────────────────┘
-```
+![Seis janelas em estados diferentes](docs/exemplos.png)
+
+Da esquerda para a direita, em cima: a **sala** de 4 folhas meio-abertas com
+cortina de linho, blackout e tubo de ar dos dois lados; a **suíte** em papel
+violeta escuro, de noite, com a cidade acesa lá fora e cortina de veludo; a
+**cozinha** com 33 °C — o ar treme no vidro — e a ventoinha solar girando.
+Embaixo: o **quarto** com 86 % de umidade (chove, e a gota escorre no vidro) e
+cortina de juta; o **escritório** a 9 °C com esquadria de alumínio; e uma
+sacada com cortina de **voil**, que é translúcida de verdade.
 
 Arquivo único, **sem build**: `dist/mw-window-curtain-card.js` é fonte e
 artefato. JS puro + `<ha-form>` do Home Assistant, sem dependência externa.
@@ -84,6 +81,11 @@ O editor tem **prévia ao vivo** (o card de verdade, com o seu `hass`), seis
 abas, **grade de amostras** com os 50 tons de papel desenhados de verdade — em
 claro e em escuro — e um **quadro de acessórios**: clique para largar, arraste
 o pino para acertar o lugar.
+
+![O editor, com prévia ao vivo e seis abas](docs/editor.png)
+
+A prévia responde a cada campo: trocar o tom de papel na grade de amostras
+repinta o card ali em cima antes de você salvar.
 
 ## A janela
 
