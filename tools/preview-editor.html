@@ -1,0 +1,133 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>MW Window / Curtain Card — bancada do editor</title>
+<!--
+  Bancada do EDITOR. `ha-form` aqui é um dublê grosseiro: desenha os campos do
+  esquema como controles HTML nativos e devolve `value-changed` igual ao de
+  verdade. Serve para conferir abas, grade de amostras de papel, quadro de
+  acessórios e prévia ao vivo — não para julgar a aparência dos campos, que no
+  HA vêm com os seletores dele.
+-->
+<style>
+  body{margin:0;padding:20px;background:#1b1f26;color:#e6e6e6;
+    font:13px/1.45 -apple-system,system-ui,sans-serif;max-width:560px;}
+  :root{--divider-color:#3a4049;--primary-color:#3fa9f5;--secondary-text-color:#9aa4b0;
+    --primary-text-color:#e6e6e6;--card-background-color:#252a32;--error-color:#e57373;
+    --accent-color:#ffb74d;}
+  h1{font-size:14px;letter-spacing:1px;text-transform:uppercase;opacity:.7;margin:0 0 14px;}
+  .fld{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;
+    padding:5px 0;border-bottom:1px solid #2c313a;}
+  .fld label{font-size:12px;color:#b9c2cc;}
+  .fld select,.fld input{padding:5px;border-radius:6px;border:1px solid #3a4049;
+    background:#252a32;color:#e6e6e6;font-size:12px;min-width:150px;}
+  details{margin:6px 0;border:1px solid #2c313a;border-radius:6px;padding:4px 8px;}
+  summary{cursor:pointer;font-size:12px;color:#9aa4b0;}
+</style>
+<h1>MW Window / Curtain Card — bancada do editor</h1>
+<div id="host"></div>
+
+<script src="../dist/mw-window-curtain-card.js"></script>
+<script>
+customElements.define("ha-card", class extends HTMLElement {
+  connectedCallback() {
+    if (this.shadowRoot) return;
+    this.attachShadow({ mode: "open" }).innerHTML =
+      `<style>:host{display:block;box-sizing:border-box;}</style><slot></slot>`;
+  }
+});
+const GLYPH = { "mdi:fan": "🌀", "mdi:solar-power-variant": "☀︎", "mdi:power-socket-eu": "🔌",
+  "mdi:thermometer": "🌡", "mdi:water-percent": "💧", "mdi:gauge": "◔", "mdi:lightbulb": "💡",
+  "mdi:flower": "🌿", "mdi:circle-medium": "•", "mdi:window-open-variant": "▤",
+  "mdi:curtains": "▥", "mdi:blinds-horizontal": "▦", "mdi:chevron-up": "▲",
+  "mdi:chevron-down": "▼", "mdi:stop": "■", "mdi:auto-fix": "✨", "mdi:plus": "＋",
+  "mdi:close": "✕", "mdi:image-filter-hdr": "⛰", "mdi:palette": "🎨" };
+customElements.define("ha-icon", class extends HTMLElement {
+  static get observedAttributes() { return ["icon"]; }
+  connectedCallback() { this._up(); }
+  attributeChangedCallback() { this._up(); }
+  _up() {
+    if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+    const ic = this.getAttribute("icon") || "";
+    this.shadowRoot.innerHTML = `<style>:host{display:inline-grid;place-items:center;
+      line-height:1;font-size:var(--mdc-icon-size,18px);}</style><span>${GLYPH[ic] || "◻︎"}</span>`;
+  }
+});
+
+/* dublê do ha-form: desenha o esquema e devolve value-changed */
+customElements.define("ha-form", class extends HTMLElement {
+  set schema(s) { this._schema = s; this._draw(); }
+  set data(d) { this._data = d; this._draw(); }
+  set hass(h) { this._hass = h; }
+  _draw() {
+    if (!this._schema || !this._data) return;
+    const label = (f) => (this.computeLabel ? this.computeLabel(f) : f.name);
+    const render = (schema) => schema.map((f) => {
+      if (f.type === "expandable") {
+        return `<details><summary>${f.title}</summary>${render(f.schema)}</details>`;
+      }
+      const v = this._data[f.name];
+      const sel = f.selector || {};
+      let ctrl;
+      if (sel.select) {
+        ctrl = `<select data-n="${f.name}">${sel.select.options.map((o) =>
+          `<option value="${o.value}"${String(o.value) === String(v) ? " selected" : ""}>${
+            String(o.label).slice(0, 46)}</option>`).join("")}</select>`;
+      } else if (sel.boolean) {
+        ctrl = `<input type="checkbox" data-n="${f.name}"${v ? " checked" : ""}>`;
+      } else if (sel.number) {
+        ctrl = `<input type="number" data-n="${f.name}" value="${v ?? ""}">`;
+      } else {
+        ctrl = `<input type="text" data-n="${f.name}" value="${v ?? ""}">`;
+      }
+      return `<div class="fld"><label>${label(f)}</label>${ctrl}</div>`;
+    }).join("");
+    this.innerHTML = render(this._schema);
+    this.querySelectorAll("[data-n]").forEach((i) => i.addEventListener("change", () => {
+      const value = { ...this._data };
+      this.querySelectorAll("[data-n]").forEach((j) => {
+        value[j.dataset.n] = j.type === "checkbox" ? j.checked
+          : j.type === "number" ? Number(j.value) : j.value;
+      });
+      this.dispatchEvent(new CustomEvent("value-changed", { detail: { value } }));
+    }));
+  }
+});
+
+const cover = (pos, name) => ({ state: pos > 0 ? "open" : "closed",
+  attributes: { current_position: pos, friendly_name: name } });
+const hass = {
+  states: {
+    "cover.janela_esquerda_da_sala": cover(50, "🟧🪟 JANELA ESQUERDA DA SALA"),
+    "cover.janela_direita_da_sala": cover(50, "🟧🪟 JANELA DIREITA DA SALA"),
+    "cover.cortina_da_sala": cover(35, "🟧🪟 CORTINA DA SALA"),
+    "cover.blackout_da_sala": cover(60, "🟧🪟🌃 BLACKOUT DA SALA"),
+    "binary_sensor.janela_esquerda_da_sala": { state: "on", attributes: { device_class: "window", friendly_name: "JANELA ESQ." } },
+    "binary_sensor.janela_direita_da_sala": { state: "off", attributes: { device_class: "window", friendly_name: "JANELA DIR." } },
+    "sensor.temperatura_da_janela_da_sala": { state: "22.9", attributes: { device_class: "temperature", unit_of_measurement: "°C" } },
+    "sensor.umidade_da_janela_da_sala": { state: "48.5", attributes: { device_class: "humidity", unit_of_measurement: "%" } },
+    "fan.exaustor_da_sala": { state: "on", attributes: { friendly_name: "EXAUSTOR" } },
+    "switch.tomada_da_janela": { state: "on", attributes: { friendly_name: "TOMADA" } },
+    "sun.sun": { state: "above_horizon", attributes: { elevation: 40 } },
+  },
+  entities: {
+    "cover.janela_esquerda_da_sala": { area_id: "sala" }, "cover.janela_direita_da_sala": { area_id: "sala" },
+    "cover.cortina_da_sala": { area_id: "sala" }, "cover.blackout_da_sala": { area_id: "sala" },
+    "binary_sensor.janela_esquerda_da_sala": { area_id: "sala" },
+    "binary_sensor.janela_direita_da_sala": { area_id: "sala" },
+    "sensor.temperatura_da_janela_da_sala": { area_id: "sala" },
+    "sensor.umidade_da_janela_da_sala": { area_id: "sala" },
+    "fan.exaustor_da_sala": { area_id: "sala" }, "switch.tomada_da_janela": { area_id: "sala" },
+  },
+  devices: {},
+  areas: { sala: { area_id: "sala", name: "Sala" }, suite: { area_id: "suite", name: "Suíte" } },
+  callService() {},
+};
+
+const ed = document.createElement("mw-window-curtain-card-editor");
+document.getElementById("host").appendChild(ed);
+ed.setConfig({ opener: "cover.janela_esquerda_da_sala", curtain: "cover.cortina_da_sala",
+  temperature: "sensor.temperatura_da_janela_da_sala", humidity: "sensor.umidade_da_janela_da_sala",
+  paper: "orange-3" });
+ed.hass = hass;
+ed.addEventListener("config-changed", (e) => console.log("config-changed", e.detail.config));
+</script>

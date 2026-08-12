@@ -1,0 +1,159 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>MW Window / Curtain Card — bancada</title>
+<!--
+  Bancada de desenho. NÃO é o Home Assistant: `ha-card` e `ha-icon` aqui são
+  dublês de duas linhas, e o `hass` é de mentira. Serve para olhar a cena em
+  todos os estados (dia, noite, chuva, calor, frio, cortina no meio do
+  caminho) sem depender do HA — o que o HA de verdade muda é o ícone.
+
+  Uso:  python3 -m http.server 8777   e abrir  /tools/preview.html
+-->
+<style>
+  body{margin:0;padding:18px;background:#20242b;color:#ddd;
+    font:13px/1.4 -apple-system,system-ui,sans-serif;}
+  h1{font-size:15px;letter-spacing:1px;text-transform:uppercase;opacity:.7;margin:0 0 14px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:18px;}
+  .cell{}
+  .cap{font-size:11px;opacity:.65;margin:0 0 6px 2px;letter-spacing:.4px;}
+</style>
+<h1>MW Window / Curtain Card — bancada de desenho</h1>
+<div class="grid" id="grid"></div>
+
+<!-- o card primeiro: os dublês e os cenários dependem dele já estar definido -->
+<script src="../dist/mw-window-curtain-card.js"></script>
+<script>
+/* ---------------- dublês dos elementos do HA ---------------- */
+customElements.define("ha-card", class extends HTMLElement {
+  connectedCallback() {
+    if (this.shadowRoot) return;
+    this.attachShadow({ mode: "open" }).innerHTML =
+      `<style>:host{display:block;box-sizing:border-box;}</style><slot></slot>`;
+  }
+});
+
+const GLYPH = {
+  "mdi:fan": "🌀", "mdi:solar-power-variant": "☀︎", "mdi:power-socket-eu": "🔌",
+  "mdi:thermometer": "🌡", "mdi:water-percent": "💧", "mdi:gauge": "◔",
+  "mdi:lightbulb": "💡", "mdi:flower": "🌿", "mdi:circle-medium": "•",
+  "mdi:window-open-variant": "▤", "mdi:curtains": "▥", "mdi:blinds-horizontal": "▦",
+  "mdi:chevron-up": "▲", "mdi:chevron-down": "▼", "mdi:stop": "■",
+  "mdi:battery-unknown": "▯",
+};
+customElements.define("ha-icon", class extends HTMLElement {
+  static get observedAttributes() { return ["icon"]; }
+  connectedCallback() { this._up(); }
+  attributeChangedCallback() { this._up(); }
+  _up() {
+    if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+    const ic = this.getAttribute("icon") || "";
+    const g = GLYPH[ic] || (ic.startsWith("mdi:battery") ? "▮" : "◻︎");
+    this.shadowRoot.innerHTML =
+      `<style>:host{display:inline-grid;place-items:center;line-height:1;
+        font-size:var(--mdc-icon-size,20px);}</style><span>${g}</span>`;
+  }
+});
+
+/* ---------------- hass de mentira ---------------- */
+const cover = (pos, name) => ({ state: pos > 0 ? "open" : "closed",
+  attributes: { current_position: pos, friendly_name: name }, last_changed: new Date().toISOString() });
+const sens = (v, dc, u) => ({ state: String(v),
+  attributes: { device_class: dc, unit_of_measurement: u }, last_changed: new Date().toISOString() });
+
+const makeHass = (over) => ({
+  states: Object.assign({
+    "cover.op_l": cover(50, "🟧🪟 JANELA ESQUERDA DA SALA"),
+    "cover.op_r": cover(50, "🟧🪟 JANELA DIREITA DA SALA"),
+    "cover.op": cover(70, "🟪🪟 JANELA DA SUÍTE"),
+    "cover.cortina": cover(35, "🟪🪟 CORTINA DA SUÍTE"),
+    "cover.blackout": cover(60, "🟧🪟🌃 BLACKOUT DA SALA"),
+    "binary_sensor.sl": { state: "on", attributes: { device_class: "window" } },
+    "binary_sensor.sr": { state: "off", attributes: { device_class: "window" } },
+    "sensor.t": sens(23.4, "temperature", "°C"),
+    "sensor.h": sens(52, "humidity", "%"),
+    "sensor.bat": sens(78, "battery", "%"),
+    "fan.exaustor": { state: "on", attributes: {} },
+    "switch.tomada1": { state: "on", attributes: {} },
+    "switch.tomada2": { state: "off", attributes: {} },
+    "climate.ar": { state: "cool", attributes: {} },
+    "sun.sun": { state: "above_horizon", attributes: { elevation: 42 } },
+  }, over || {}),
+  entities: {}, devices: {}, areas: {},
+  callService(d, s, x) { console.log("callService", d, s, x); },
+});
+
+/* ---------------- cenários ---------------- */
+const BASE = {
+  opener: "cover.op", sensor_left: "binary_sensor.sl", sensor_right: "binary_sensor.sr",
+  temperature: "sensor.t", humidity: "sensor.h", battery: "sensor.bat",
+};
+
+const CASES = [
+  ["Sala · 4 folhas, meio-abertas, cortina e blackout, tubo dos dois lados", {
+    ...BASE, name: "JANELA DA SALA", panes: 4, slide: "out",
+    opener: "cover.op_l", opener_right: "cover.op_r",
+    curtain: "cover.cortina", curtain_open_from: "sides", curtain_texture: "linho",
+    blackout: "cover.blackout", ac_duct: "both", ac_entity: "climate.ar",
+    paper: "orange-3", scenery_skyline: "cidade",
+    accessories: [
+      { type: "exhaust", entity: "fan.exaustor", x: 84, y: 12, size: 26 },
+      { type: "socket", entity: "switch.tomada1", x: 5, y: 55, size: 22 },
+      { type: "socket", entity: "switch.tomada2", x: 5, y: 76, size: 22 },
+    ],
+  }, {}],
+
+  ["Suíte · 2 folhas, papel violeta escuro, noite estrelada", {
+    ...BASE, name: "JANELA DA SUÍTE", paper: "violet-5", paper_dark: true,
+    curtain: "cover.cortina", curtain_texture: "veludo", curtain_paper: "violet-4", curtain_dark: true,
+    scenery_skyline: "cidade",
+    accessories: [{ type: "exhaust", entity: "fan.exaustor", x: 86, y: 14, size: 26 }],
+  }, { "sun.sun": { state: "below_horizon", attributes: { elevation: -24 } } }],
+
+  ["Cozinha · calor (33 °C), papel amarelo, ventoinha solar", {
+    ...BASE, name: "JANELA DA COZINHA", paper: "yellow-4", scenery_skyline: "morros",
+    accessories: [
+      { type: "solar_fan", x: 88, y: 20, size: 26 },
+      { type: "mini_fan", entity: "fan.exaustor", x: 12, y: 20, size: 22 },
+    ],
+  }, { "sensor.t": sens(33.2, "temperature", "°C"), "sun.sun": { state: "above_horizon", attributes: { elevation: 58 } } }],
+
+  ["Quarto · chuva (86 % UR), papel azul escuro, blackout descendo", {
+    ...BASE, name: "JANELA DO QUARTO", paper: "blue-6", paper_dark: true,
+    blackout: "cover.blackout", curtain: "cover.cortina", curtain_open_from: "left",
+    curtain_texture: "juta", scenery_skyline: "mar",
+  }, { "sensor.h": sens(86, "humidity", "%"), "sensor.t": sens(19.5, "temperature", "°C"),
+       "sun.sun": { state: "above_horizon", attributes: { elevation: 6 } } }],
+
+  ["Escritório · frio (9 °C), esquadria de alumínio, campo", {
+    ...BASE, name: "JANELA DO ESCRITÓRIO", paper: "indigo-2", frame_tone: "aluminio",
+    scenery_skyline: "campo", blackout: "cover.blackout", depth: "soft",
+  }, { "sensor.t": sens(9.1, "temperature", "°C"), "sensor.h": sens(41, "humidity", "%") }],
+
+  ["Voil transparente · cortina quase fechada · madeira · cantos assimétricos", {
+    ...BASE, name: "SACADA", curtain: "cover.cortina", curtain_texture: "voil",
+    curtain_paper: "green-2", frame_tone: "madeira", paper: "green-3",
+    radius_tl: 4, radius_tr: 4, radius_br: 12, radius_bl: 52,
+    scenery_skyline: "morros", controls: "compact",
+  }, { "cover.cortina": cover(12, "CORTINA") }],
+];
+
+const grid = document.getElementById("grid");
+for (const [cap, cfg, over] of CASES) {
+  const cell = document.createElement("div");
+  cell.className = "cell";
+  const p = document.createElement("p");
+  p.className = "cap";
+  p.textContent = cap;
+  cell.appendChild(p);
+  const card = document.createElement("mw-window-curtain-card");
+  try {
+    card.setConfig(cfg);
+    card.hass = makeHass(over);
+  } catch (e) {
+    p.textContent = `${cap} — ERRO: ${e.message}`;
+    p.style.color = "#f88";
+  }
+  cell.appendChild(card);
+  grid.appendChild(cell);
+}
+</script>

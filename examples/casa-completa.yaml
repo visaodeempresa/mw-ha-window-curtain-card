@@ -1,0 +1,112 @@
+# As seis janelas da casa, com as entidades REAIS do BASE-ALFA-01.
+# Conferidas contra /api/states em 12/08/2026 — se alguma sumir, é rename.
+#
+# Convenção de cor por ambiente (a mesma dos emojis do HA):
+#   🟧 sala = orange · 🟪 suíte = violet · 🟨 cozinha = yellow
+#   🟦 quarto = blue · ⬛️ escritório = indigo
+
+# ─────────────────────────────────────────────────────────────────────
+# SALA — a única de 4 folhas: as das pontas são fixas de fábrica e as
+# duas do meio têm um empurrador cada. Cortina + blackout.
+# ─────────────────────────────────────────────────────────────────────
+- type: custom:mw-window-curtain-card
+  name: JANELA DA SALA
+  panes: 4
+  slide: out
+  opener: cover.janela_esquerda_da_sala
+  opener_right: cover.janela_direita_da_sala
+  sensor_left: binary_sensor.janela_esquerda_da_sala
+  sensor_right: binary_sensor.janela_direita_da_sala
+  temperature: sensor.temperatura_da_janela_da_sala
+  humidity: sensor.umidade_da_janela_da_sala
+  curtain: cover.cortina_da_sala
+  curtain_open_from: sides
+  curtain_texture: linho
+  blackout: cover.blackout_da_sala
+  paper: orange-3
+  scenery_skyline: cidade
+  accessories:
+    - type: socket
+      entity: switch.tomada_do_umidificador_da_janela_da_sala
+      label: Umidificador
+      x: 5
+      y: 62
+
+# ─────────────────────────────────────────────────────────────────────
+# SUÍTE — 2 folhas, exaustor na parte de cima, cortina de veludo violeta
+# em papel escuro. É a janela das imagens que originaram este card.
+# ─────────────────────────────────────────────────────────────────────
+- type: custom:mw-window-curtain-card
+  name: JANELA DA SUÍTE
+  opener: cover.0xbc026efffe0b49f4
+  sensor_left: binary_sensor.suite_janela_esquerda_da_suite
+  sensor_right: binary_sensor.suite_janela_direita_da_suite
+  temperature: sensor.temperatura_da_janela_da_suite
+  humidity: sensor.umidade_da_janela_da_suite
+  curtain: cover.cortina_da_suite
+  curtain_texture: veludo
+  curtain_paper: violet-4
+  curtain_dark: true
+  paper: violet-5
+  paper_dark: true
+  radius_bl: 52          # o canto que antes era card_mod na mão
+  accessories:
+    - type: exhaust
+      entity: fan.exaustor_da_suite
+      x: 86
+      y: 13
+
+# ─────────────────────────────────────────────────────────────────────
+# COZINHA — 2 folhas, exaustor, e a ventoinha solar que não é
+# inteligente: quem a liga é o sol.
+# ─────────────────────────────────────────────────────────────────────
+- type: custom:mw-window-curtain-card
+  name: JANELA DA COZINHA
+  opener: cover.janela_da_cozinha
+  sensor_left: binary_sensor.janela_esquerda_da_cozinha
+  sensor_right: binary_sensor.janela_direita_da_cozinha
+  temperature: sensor.temperatura_da_janela_da_cozinha
+  humidity: sensor.umidade_da_janela_da_cozinha
+  paper: yellow-4
+  scenery_skyline: morros
+  accessories:
+    - type: exhaust
+      entity: fan.exaustor_da_cozinha
+      x: 85
+      y: 14
+    - type: solar_fan
+      x: 15
+      y: 14
+
+# ─────────────────────────────────────────────────────────────────────
+# QUARTO — 2 folhas e cortina (o cover ainda está com o ID do Zigbee).
+# ─────────────────────────────────────────────────────────────────────
+- type: custom:mw-window-curtain-card
+  name: JANELA DO QUARTO
+  opener: cover.janela_do_quarto
+  sensor_left: binary_sensor.janela_esquerda_do_quarto
+  sensor_right: binary_sensor.janela_direita_do_quarto
+  temperature: sensor.temperatura_da_janela_do_quarto
+  humidity: sensor.umidade_da_janela_do_quarto
+  curtain: cover.0xa4c1386cf98c2799
+  curtain_open_from: sides
+  curtain_texture: juta
+  paper: blue-4
+
+# ─────────────────────────────────────────────────────────────────────
+# ESCRITÓRIO — 2 folhas e blackout, sem cortina. O tubo do ar sai pela
+# direita; ligue ac_entity no split para o sopro animado.
+# ─────────────────────────────────────────────────────────────────────
+- type: custom:mw-window-curtain-card
+  name: JANELA DO ESCRITÓRIO
+  opener: cover.estado_da_janela_do_escritorio
+  sensor_left: binary_sensor.janela_esquerda_do_escritorio
+  sensor_right: binary_sensor.janela_direita_do_escritorio
+  temperature: sensor.temperatura_da_janela_do_escritorio
+  humidity: sensor.umidade_da_janela_do_escritorio
+  blackout: cover.blackout_do_escritorio
+  ac_duct: right
+  paper: indigo-5
+  paper_dark: true
+  frame_tone: aluminio
+  scenery_skyline: cidade
