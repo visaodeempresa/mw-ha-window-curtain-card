@@ -61,6 +61,11 @@ Levantado por `/api/states` em 12/08/2026 — **não é suposição**:
 | `SyntaxError: Unexpected identifier` no `node --check` | comentário com crase dentro de um template literal fecha a string | não usar crase em comentário dentro de `_css()` |
 | Lua some nas janelas à noite | a lua estava pendurada na elevação do sol (−20° = abaixo do horizonte) | à noite a lua sobe pelo relógio, não pela elevação |
 | Reflexo do vidro brilhando de madrugada | `.shine` com alfa fixo | `opacity: calc(1 - var(--night) * .78)` |
+| Risco do sensor some quando a cortina tem sobra | o pano é desenhado depois e cobre a borda do vão | desenhar `${lines}` por ÚLTIMO, na frente de tudo |
+| Nome vira «SALA · RI…» com os chips no topo | cabeçalho em linha única espremia o título | `.head{flex-wrap:wrap}` + `.titlewrap{flex:1 1 55%}` |
+| Pastilhas da marca d'água se atropelando | lado a lado, com fonte grande, não cabem | empilhar (`flex-direction:column`) e tirar as de Esq./Dir. |
+| Teste do halo passando por engano | a regex `0 0 Npx rgba(1…` casava com o brilho da tomada acesa | testar a **assinatura** da cor do halo, não o formato da sombra |
+| Probe não enxerga classe nem variável CSS | `classList.contains` do dublê devolvia sempre `false` e `style` não tinha `getPropertyValue` | dublê com `Set` e `Map` de verdade (v0.2.0) |
 
 ## Bancadas
 
