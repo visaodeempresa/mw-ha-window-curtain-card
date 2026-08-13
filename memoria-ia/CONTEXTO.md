@@ -65,6 +65,8 @@ Levantado por `/api/states` em 12/08/2026 — **não é suposição**:
 | Nome vira «SALA · RI…» com os chips no topo | cabeçalho em linha única espremia o título | `.head{flex-wrap:wrap}` + `.titlewrap{flex:1 1 55%}` |
 | Pastilhas da marca d'água se atropelando | lado a lado, com fonte grande, não cabem | empilhar (`flex-direction:column`) e tirar as de Esq./Dir. |
 | Teste do halo passando por engano | a regex `0 0 Npx rgba(1…` casava com o brilho da tomada acesa | testar a **assinatura** da cor do halo, não o formato da sombra |
+| Rótulo do controle sumindo quando a cortina abre | a classe `.cl` do pano colidia com a `.cl` do rótulo, que herdava `transform: scaleX(var(--cl))` | panos são `.cur-l`/`.cur-r`; classe curta em CSS de shadow root é armadilha |
+| Cortina comprida cortada na borda do card | pano abaixo do peitoril saía do `viewBox` e o card tem `overflow:hidden` | `_viewBox(c)` cresce com `curtain_top`/`curtain_drop`/`rod_offset`, e o `.scene` acompanha pela mesma proporção |
 | Probe não enxerga classe nem variável CSS | `classList.contains` do dublê devolvia sempre `false` e `style` não tinha `getPropertyValue` | dublê com `Set` e `Map` de verdade (v0.2.0) |
 
 ## Bancadas

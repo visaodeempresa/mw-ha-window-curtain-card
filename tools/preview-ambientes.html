@@ -1,0 +1,77 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SUÍTE 4.0 e SALA 4.0 — como ficaria</title>
+<!--
+  Os dois ambientes com as ENTIDADES e os ESTADOS reais do BASE-ALFA-01
+  (tools/ambientes.json, extraído do HA), cada um em dois estados: como está
+  agora e com a cortina fechada, para a sobra do pano aparecer.
+  Não é o Home Assistant: `ha-card` e `ha-icon` aqui são dublês.
+-->
+<style>
+  body{margin:0;padding:20px;background:#171a20;color:#dde;
+    font:13px/1.45 -apple-system,system-ui,sans-serif;}
+  h1{font-size:14px;letter-spacing:1.2px;text-transform:uppercase;opacity:.65;margin:0 0 16px;}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(320px,1fr));gap:20px;}
+  .cap{font-size:11.5px;opacity:.6;margin:0 0 7px 2px;letter-spacing:.4px;}
+  .erro{color:#ff8a80;font-weight:700;}
+</style>
+<h1>SUÍTE 4.0 · SALA 4.0 — a cortina passando da janela</h1>
+<div class="grid" id="grid"></div>
+
+<script src="../dist/mw-window-curtain-card.js"></script>
+<script>
+customElements.define("ha-card", class extends HTMLElement {
+  connectedCallback(){ if(this.shadowRoot) return;
+    this.attachShadow({mode:"open"}).innerHTML =
+      `<style>:host{display:block;box-sizing:border-box;}</style><slot></slot>`; }
+});
+const G={"mdi:fan":"🌀","mdi:power-socket-eu":"🔌","mdi:thermometer":"🌡",
+ "mdi:water-percent":"💧","mdi:window-open-variant":"▤","mdi:curtains":"▥",
+ "mdi:blinds-horizontal":"▦","mdi:chevron-up":"▲","mdi:chevron-down":"▼",
+ "mdi:stop":"■","mdi:battery-unknown":"▯"};
+customElements.define("ha-icon", class extends HTMLElement {
+  static get observedAttributes(){return["icon"];}
+  connectedCallback(){this._u();} attributeChangedCallback(){this._u();}
+  _u(){ if(!this.shadowRoot) this.attachShadow({mode:"open"});
+    const i=this.getAttribute("icon")||"";
+    this.shadowRoot.innerHTML=`<style>:host{display:inline-grid;place-items:center;
+      line-height:1;font-size:var(--mdc-icon-size,18px);}</style><span>${
+      G[i]||(i.startsWith("mdi:battery")?"▮":"◻︎")}</span>`; }
+});
+
+fetch("ambientes.json").then(r=>r.json()).then(d=>{
+  const base = () => JSON.parse(JSON.stringify(d.states));
+  // fecha um cover no hass de mentira, para ver o pano inteiro
+  const fechando = (st, ids, pos) => {
+    ids.forEach(id => { if (st[id]) {
+      st[id] = { state: pos > 0 ? "open" : "closed",
+                 attributes: { ...st[id].attributes, current_position: pos } };
+    }});
+    return st;
+  };
+  const casos = [
+    ["SUÍTE 4.0 · como está agora", d.suite, base()],
+    ["SUÍTE 4.0 · cortina fechando (a sobra aparece)", d.suite,
+      fechando(base(), ["cover.cortina_da_suite"], 15)],
+    ["SALA 4.0 · como está agora", d.sala, base()],
+    ["SALA 4.0 · cortina fechando, blackout meio descido", d.sala,
+      fechando(fechando(base(), ["cover.cortina_da_sala"], 18),
+               ["cover.blackout_da_sala"], 55)],
+  ];
+  const grid = document.getElementById("grid");
+  for (const [cap, cfg, states] of casos) {
+    const cell = document.createElement("div");
+    const p = document.createElement("p");
+    p.className = "cap"; p.textContent = cap;
+    cell.appendChild(p);
+    try {
+      const c = document.createElement("mw-window-curtain-card");
+      c.setConfig(cfg);
+      c.hass = { states, entities:{}, devices:{}, areas:{}, localize:k=>k, callService(){} };
+      cell.appendChild(c);
+    } catch (e) { p.className="cap erro"; p.textContent = `${cap} — ERRO: ${e.message}`; }
+    grid.appendChild(cell);
+  }
+  window.__pronto = true;
+});
+</script>

@@ -775,6 +775,22 @@
       this._paint();
     }
 
+    /* A caixa do desenho cresce com a cortina.
+     * Cortina que desce abaixo do peitoril e varão que sobe acima da janela
+     * saem do viewBox e o card, que tem `overflow:hidden`, corta o pano. Em
+     * vez de encolher a cortina, a cena ganha o espaço de que precisa — e o
+     * `.scene` acompanha pela mesma proporção, senão os acessórios (que são
+     * HTML em % da caixa) descolam do desenho. */
+    _viewBox(c) {
+      if (!c.curtain) return { x: 0, y: 0, w: SC.W, h: SC.H };
+      const rodTop = GL.y - numOr(c.curtain_top, 0) - 9 - numOr(c.rod_offset, 0)
+        - numOr(c.rod_thickness, 4.5) * 0.9;
+      const clothBot = GL.y + GL.h + numOr(c.curtain_drop, 0) + 8;
+      const top = Math.max(0, Math.ceil(2 - rodTop));
+      const bot = Math.max(0, Math.ceil(clothBot - SC.H));
+      return { x: 0, y: -top, w: SC.W, h: SC.H + top + bot };
+    }
+
     _gradientStops(key, dark) {
       // O papel vem como CSS linear-gradient e o SVG precisa das duas paradas
       // separadas — extrair é mais honesto que manter duas tabelas de cor.
@@ -854,11 +870,14 @@
       const cW = GL.w + 2 * ovh;
       const cTop = GL.y - numOr(c.curtain_top, 0);
       const cBot = GL.y + GL.h + numOr(c.curtain_drop, 0);
+      // "cur-l"/"cur-r", e não "cl"/"cr": `.cl` é o rótulo do controle lá
+      // embaixo, e a colisão fazia o rótulo herdar `scaleX(var(--cl))` — com
+      // a cortina aberta ele encolhia até sumir. Classe curta é armadilha.
       const curtains = c.curtain ? (c.curtain_open_from === "sides"
-        ? curtainPanel("cl", cX, cW / 2, cTop, cBot) + curtainPanel("cr", cX + cW / 2, cW / 2, cTop, cBot)
+        ? curtainPanel("cur-l", cX, cW / 2, cTop, cBot) + curtainPanel("cur-r", cX + cW / 2, cW / 2, cTop, cBot)
         : c.curtain_open_from === "right"
-          ? curtainPanel("cr", cX, cW, cTop, cBot)
-          : curtainPanel("cl", cX, cW, cTop, cBot)) : "";
+          ? curtainPanel("cur-r", cX, cW, cTop, cBot)
+          : curtainPanel("cur-l", cX, cW, cTop, cBot)) : "";
 
       const rodT = numOr(c.rod_thickness, 4.5);
       const rodY = cTop - 9 - numOr(c.rod_offset, 0);
@@ -940,8 +959,9 @@
 
       const acc = (c.accessories || []).map((a, i) => this._accessory(a, i)).join("");
 
+      const vb = this._viewBox(c);
       return `<div class="scene">
-        <svg class="svg" viewBox="0 0 ${SC.W} ${SC.H}" preserveAspectRatio="xMidYMid meet" role="img">
+        <svg class="svg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" preserveAspectRatio="xMidYMid meet" role="img">
           <defs>
             <linearGradient id="wcCloth" x1="0" y1="0" x2="1" y2="0">
               ${this._pleatStops(curtainStop, tex)}
@@ -1073,6 +1093,7 @@
     /* ------------------------------ CSS ------------------------------ */
 
     _css(c, dark, ink, paperBg, fr, tex) {
+      const vb = this._viewBox(c);
       const depth = c.depth || "3d";
       const shadow = depth === "flat" ? "none"
         : depth === "soft"
@@ -1143,15 +1164,17 @@ ${c.hover_glow && bs !== "none" ? `
   line-height:1.3;margin-top:1px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .badges{display:flex;gap:3px;font-size:${numOr(c.font_badge, 15)}px;line-height:1;flex:none;}
-.headchips{display:flex;gap:4px;flex:1 1 auto;flex-wrap:wrap;justify-content:flex-end;}
+/* flex 0 1 auto: as pastilhas pegam só o que precisam, e os emojis ainda
+   cabem na mesma linha — crescendo, empurravam os emojis para uma 3ª linha */
+.headchips{display:flex;gap:4px;flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;}
 
 /* ---------- cena ----------
    A caixa da cena tem EXATAMENTE a proporção do viewBox. Sem isso o SVG
    centraliza dentro de uma caixa mais larga e os acessórios — que são HTML
    posicionado em % da caixa — descolam da janela. scene_height é o teto de
    altura, virando limite de largura pela mesma proporção. */
-.scene{position:relative;margin:0 auto;aspect-ratio:${SC.W} / ${SC.H};
-  width:min(100%, ${Math.round(numOr(c.scene_height, 300) * SC.W / SC.H)}px);}
+.scene{position:relative;margin:0 auto;aspect-ratio:${vb.w} / ${vb.h};
+  width:min(100%, ${Math.round(numOr(c.scene_height, 300) * vb.w / vb.h)}px);}
 .svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;}
 
 /* o fill do céu é o gradiente montado em _skyGrad(); a cor abaixo é só o
@@ -1205,8 +1228,8 @@ ${c.hover_glow && bs !== "none" ? `
 .curtain{transition:transform var(--dur) cubic-bezier(.4,.75,.3,1);transform-box:fill-box;}
 .cloth{fill:url(#wcCloth);${sheer ? "opacity:.62;" : ""}
   filter:${tex.filter ? `${tex.filter} ` : ""}drop-shadow(0 2px 4px rgba(0,0,0,.35));}
-.cl{transform-origin:0% 50%;transform:scaleX(var(--cl));}
-.cr{transform-origin:100% 50%;transform:scaleX(var(--cr));}
+.cur-l{transform-origin:0% 50%;transform:scaleX(var(--cl));}
+.cur-r{transform-origin:100% 50%;transform:scaleX(var(--cr));}
 .rod rect,.rod circle{fill:url(#wcFrame);}
 .rod{filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));}
 
@@ -2587,7 +2610,7 @@ ${c.hover_glow && bs !== "none" ? `
     documentationURL: "https://github.com/visaodeempresa/mw-ha-window-curtain-card",
   });
 
-  console.info("%c MW-WINDOW-CURTAIN-CARD %c 0.2.0 ",
+  console.info("%c MW-WINDOW-CURTAIN-CARD %c 0.2.1 ",
     "background:#1a1a1a;color:#fdfaf3;font-weight:700;",
     "background:#7ec8f2;color:#1a1a1a;font-weight:700;");
 

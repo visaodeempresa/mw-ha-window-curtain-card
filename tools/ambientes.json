@@ -1,0 +1,262 @@
+{
+ "suite": {
+  "type": "custom:mw-window-curtain-card",
+  "name": "JANELA DA SUÍTE",
+  "opener": "cover.0xbc026efffe0b49f4",
+  "sensor_left": "binary_sensor.suite_janela_esquerda_da_suite",
+  "sensor_right": "binary_sensor.suite_janela_direita_da_suite",
+  "temperature": "sensor.temperatura_da_janela_da_suite",
+  "humidity": "sensor.umidade_da_janela_da_suite",
+  "curtain": "cover.cortina_da_suite",
+  "curtain_texture": "veludo",
+  "curtain_paper": "violet-4",
+  "curtain_dark": true,
+  "curtain_overhang": 20,
+  "curtain_top": 12,
+  "curtain_drop": 30,
+  "rod_offset": 6,
+  "rod_extend": 24,
+  "rod_thickness": 6,
+  "paper": "violet-5",
+  "paper_dark": true,
+  "border_style": "glow",
+  "border_width": 4,
+  "border_glow": 0.4,
+  "hover_glow": true,
+  "radius_tl": 14,
+  "radius_tr": 14,
+  "radius_br": 14,
+  "radius_bl": 52,
+  "sensor_style": "line",
+  "chips_position": "header",
+  "controls_inset": 12,
+  "drag_target": "curtain",
+  "confirm_accessory": true,
+  "accessories": [
+   {
+    "type": "exhaust",
+    "entity": "fan.exaustor_da_suite",
+    "label": "Exaustor",
+    "x": 90,
+    "y": 8,
+    "size": 24
+   },
+   {
+    "type": "socket",
+    "entity": "switch.t_janela_suit",
+    "label": "Tomada",
+    "x": 4,
+    "y": 60,
+    "size": 22
+   }
+  ]
+ },
+ "sala": {
+  "type": "custom:mw-window-curtain-card",
+  "name": "JANELA DA SALA",
+  "panes": 4,
+  "slide": "out",
+  "opener": "cover.janela_esquerda_da_sala",
+  "opener_right": "cover.janela_direita_da_sala",
+  "sensor_left": "binary_sensor.janela_esquerda_da_sala",
+  "sensor_right": "binary_sensor.janela_direita_da_sala",
+  "temperature": "sensor.temperatura_da_janela_da_sala",
+  "humidity": "sensor.umidade_da_janela_da_sala",
+  "curtain": "cover.cortina_da_sala",
+  "curtain_texture": "linho",
+  "curtain_paper": "orange-2",
+  "curtain_overhang": 22,
+  "curtain_top": 12,
+  "curtain_drop": 32,
+  "rod_offset": 6,
+  "rod_extend": 26,
+  "rod_thickness": 6,
+  "blackout": "cover.blackout_da_sala",
+  "blackout_paper": "orange-7",
+  "blackout_dark": true,
+  "paper": "orange-3",
+  "border_style": "soft",
+  "border_width": 4,
+  "radius_tl": 14,
+  "radius_tr": 14,
+  "radius_br": 14,
+  "radius_bl": 14,
+  "sensor_style": "line",
+  "chips_position": "header",
+  "controls_inset": 12,
+  "drag_target": "curtain",
+  "scenery_skyline": "cidade",
+  "accessories": [
+   {
+    "type": "socket",
+    "entity": "switch.tomada_do_umidificador_da_janela_da_sala",
+    "label": "Umidificador",
+    "x": 4,
+    "y": 62,
+    "size": 22
+   }
+  ]
+ },
+ "states": {
+  "fan.exaustor_da_suite": {
+   "state": "on",
+   "attributes": {
+    "friendly_name": "🟪💨 EXAUSTOR DA SUÍTE",
+    "supported_features": 48
+   }
+  },
+  "sun.sun": {
+   "state": "below_horizon",
+   "attributes": {
+    "next_dawn": "2026-08-13T09:03:18.560139+00:00",
+    "next_dusk": "2026-08-13T21:30:51.687209+00:00",
+    "next_midnight": "2026-08-13T03:17:00+00:00",
+    "next_noon": "2026-08-13T15:17:06+00:00",
+    "next_rising": "2026-08-13T09:27:02.120063+00:00",
+    "next_setting": "2026-08-13T21:07:08.379683+00:00",
+    "elevation": -57.33,
+    "azimuth": 272.67,
+    "rising": false,
+    "friendly_name": "Sun"
+   }
+  },
+  "switch.t_janela_suit": {
+   "state": "on",
+   "attributes": {
+    "friendly_name": "🟪🪟⚡️ T JANELA SUIT"
+   }
+  },
+  "cover.janela_direita_da_sala": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 50,
+    "friendly_name": "🟧🪟 JANELA DIREITA DA SALA",
+    "supported_features": 15
+   }
+  },
+  "cover.janela_esquerda_da_sala": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 50,
+    "friendly_name": "🟧🪟 JANELA ESQUERDA DA SALA",
+    "supported_features": 15
+   }
+  },
+  "cover.0xbc026efffe0b49f4": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 100,
+    "friendly_name": "🟪🪟 JANELA DA SUÍTE",
+    "supported_features": 15
+   }
+  },
+  "binary_sensor.suite_janela_esquerda_da_suite": {
+   "state": "off",
+   "attributes": {
+    "device_class": "window",
+    "friendly_name": "🟪🪟 JANELA ESQUERDA DA SUÍTE"
+   }
+  },
+  "binary_sensor.suite_janela_direita_da_suite": {
+   "state": "on",
+   "attributes": {
+    "device_class": "window",
+    "friendly_name": "🟪🪟 JANELA DIREITA DA SUÍTE"
+   }
+  },
+  "binary_sensor.janela_direita_da_sala": {
+   "state": "on",
+   "attributes": {
+    "device_class": "opening",
+    "friendly_name": "🟧🪟 JANELA DIREITA DA SALA"
+   }
+  },
+  "binary_sensor.janela_esquerda_da_sala": {
+   "state": "on",
+   "attributes": {
+    "device_class": "opening",
+    "friendly_name": "🟧🪟 JANELA ESQUERDA DA SALA"
+   }
+  },
+  "sensor.temperatura_da_janela_da_sala": {
+   "state": "25.15",
+   "attributes": {
+    "state_class": "measurement",
+    "unit_of_measurement": "°C",
+    "device_class": "temperature",
+    "icon": "mdi:window-closed-variant",
+    "friendly_name": "🟧🌡️ Temperatura da Janela da Sala"
+   }
+  },
+  "sensor.umidade_da_janela_da_sala": {
+   "state": "42.57",
+   "attributes": {
+    "state_class": "measurement",
+    "unit_of_measurement": "%",
+    "device_class": "humidity",
+    "icon": "mdi:window-closed-variant",
+    "friendly_name": "🟧💧 Umidade da Janela da Sala"
+   }
+  },
+  "sensor.temperatura_da_janela_da_suite": {
+   "state": "27.06",
+   "attributes": {
+    "state_class": "measurement",
+    "unit_of_measurement": "°C",
+    "device_class": "temperature",
+    "icon": "mdi:window-closed-variant",
+    "friendly_name": "🟪🪟🌡️ Temperatura da Janela da Suíte"
+   }
+  },
+  "sensor.umidade_da_janela_da_suite": {
+   "state": "46.2",
+   "attributes": {
+    "state_class": "measurement",
+    "unit_of_measurement": "%",
+    "device_class": "humidity",
+    "icon": "mdi:window-closed-variant",
+    "friendly_name": "🟪🪟💧 Umidade da Janela da Suíte"
+   }
+  },
+  "cover.cortina_da_suite": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 100,
+    "device_class": "curtain",
+    "friendly_name": "🟪🪟 CORTINA DA SUÍTE",
+    "supported_features": 15
+   }
+  },
+  "cover.blackout_da_sala": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 100,
+    "device_class": "curtain",
+    "friendly_name": "🟧🪟🌃 BLACKOUT DA SALA",
+    "supported_features": 15
+   }
+  },
+  "cover.cortina_da_sala": {
+   "state": "open",
+   "attributes": {
+    "is_closed": false,
+    "current_position": 48,
+    "device_class": "curtain",
+    "friendly_name": "🟧🪟🏙️ CORTINA DA SALA",
+    "supported_features": 15
+   }
+  },
+  "switch.tomada_do_umidificador_da_janela_da_sala": {
+   "state": "on",
+   "attributes": {
+    "device_class": "outlet",
+    "friendly_name": "🟧🔌💧🪟 TOMADA DO UMIDIFICADOR DA JANELA DA SALA"
+   }
+  }
+ }
+}

@@ -141,7 +141,11 @@ const html = el.shadowRoot.innerHTML;
 ok("desenhou o SVG", html.includes("<svg"), `${html.length} bytes`);
 ok("4 folhas de vidro", (html.match(/class="pane /g) || []).length === 4);
 ok("duas folhas móveis", html.includes("move m1") && html.includes("move m2"));
-ok("cortina de dois panos", html.includes("curtain cl") && html.includes("curtain cr"));
+ok("cortina de dois panos", html.includes("curtain cur-l") && html.includes("curtain cur-r"));
+// regressão: `.cl` do pano colidia com `.cl` do rótulo do controle, e o
+// rótulo herdava scaleX(var(--cl)) — sumia com a cortina aberta
+ok("classe do pano não colide com a do rótulo",
+  !/class="curtain cl"/.test(html) && !/class="curtain cr"/.test(html));
 ok("blackout", html.includes("boCloth"));
 ok("tubo dos dois lados", html.includes("duct-l") && html.includes("duct-r"));
 ok("acessório", html.includes("a-exhaust"));
@@ -170,6 +174,12 @@ const monta = (extra) => {
   e.hass = hass;
   return e.shadowRoot.innerHTML;
 };
+
+// Sobre a crase solta em comentário dentro do template do _css(): NÃO tem
+// teste aqui de propósito. Ela é erro de SINTAXE — o arquivo não carrega, o
+// `eval` acima morre antes, e nenhum teste deste arquivo chega a rodar. Quem
+// pega é `node --check`, antes e com mensagem melhor. Um teste aqui seria
+// consolo falso: nunca falharia.
 
 console.log("\nmelhorias:");
 ok("sensor como risco vertical", (() => {
@@ -200,6 +210,20 @@ ok("cortina maior que o vão", (() => {
   const com = monta({ curtain_overhang: 20 });
   // com sobra, o pano começa 20 unidades antes do vão (x = 55 - 20 = 35)
   return com.includes("M35,") && !sem.includes("M35,");
+})());
+ok("cena cresce para caber a cortina comprida", (() => {
+  const curta = monta({ curtain_drop: 0 });
+  const longa = monta({ curtain_drop: 40, curtain_top: 12, rod_offset: 10 });
+  const vb = (h) => (h.match(/viewBox="([^"]+)"/) || [])[1];
+  const [, , , h0] = vb(curta).split(" ").map(Number);
+  const [, y1, , h1] = vb(longa).split(" ").map(Number);
+  // cresce em cima (y negativo) e embaixo (altura maior)
+  return h0 === 230 && y1 < 0 && h1 > h0;
+})());
+ok("proporção da caixa acompanha o viewBox", (() => {
+  const h = monta({ curtain_drop: 40, curtain_top: 12, rod_offset: 10 });
+  const vb = (h.match(/viewBox="([^"]+)"/) || [])[1].split(" ").map(Number);
+  return h.includes(`aspect-ratio:${vb[2]} / ${vb[3]}`);
 })());
 ok("varão sobe e estica", (() => {
   const h = monta({ rod_offset: 10, rod_extend: 30 });
