@@ -6,10 +6,26 @@
 const fs = require("fs");
 const path = require("path");
 
+// `classList` e `style` de verdade: sem eles o probe não consegue afirmar
+// nada sobre classe ligada nem sobre variável CSS escrita — que é metade do
+// que este card faz.
 const mkEl = () => {
+  const cls = new Set();
+  const props = new Map();
   const el = {
-    style: { cssText: "", setProperty() {}, removeProperty() {} },
-    dataset: {}, classList: { toggle() {}, add() {}, remove() {}, contains: () => false },
+    style: {
+      cssText: "",
+      setProperty(k, v) { props.set(k, String(v)); },
+      getPropertyValue(k) { return props.get(k) ?? ""; },
+      removeProperty(k) { props.delete(k); },
+    },
+    dataset: {},
+    classList: {
+      add: (...n) => n.forEach((x) => cls.add(x)),
+      remove: (...n) => n.forEach((x) => cls.delete(x)),
+      contains: (n) => cls.has(n),
+      toggle: (n, f) => { const on = f === undefined ? !cls.has(n) : !!f; if (on) cls.add(n); else cls.delete(n); return on; },
+    },
     children: [], innerHTML: "", textContent: "", value: "",
     setAttribute() {}, getAttribute: () => null, removeAttribute() {},
     addEventListener() {}, removeEventListener() {}, dispatchEvent() {},
@@ -139,6 +155,107 @@ ok("sem gradiente órfão no SVG",
   !/url\(#wc[A-Za-z]+\)/.test(html.replace(/url\(#(wcCloth|wcBo|wcFrame|wcClip|wcLinen|wcJute|wcSkyGrad)\)/g, "")),
   "referência a def inexistente");
 
+/* --- melhorias pedidas em 12/08/2026 --- */
+const monta = (extra) => {
+  const e = new Card();
+  e.setConfig({
+    opener: "cover.janela_esquerda_da_sala",
+    curtain: "cover.cortina_da_sala",
+    sensor_left: "binary_sensor.janela_esquerda_da_sala",
+    sensor_right: "binary_sensor.janela_direita_da_sala",
+    temperature: "sensor.temperatura_da_janela_da_sala",
+    humidity: "sensor.umidade_da_janela_da_sala",
+    ...extra,
+  });
+  e.hass = hass;
+  return e.shadowRoot.innerHTML;
+};
+
+console.log("\nmelhorias:");
+ok("sensor como risco vertical", (() => {
+  const h = monta({ sensor_style: "line" });
+  return h.includes('class="sl sl-l') && h.includes('class="sl sl-r');
+})());
+ok("estilo pastilha não desenha risco", !monta({}).includes('class="sl sl-'));
+ok("estilo «os dois» tem risco e pastilha", (() => {
+  const h = monta({ sensor_style: "both" });
+  return h.includes('class="sl sl-l') && h.includes("dot-l");
+})());
+ok("risco sozinho tira a pastilha do rodapé", !monta({ sensor_style: "line" }).includes("dot-l"));
+
+ok("chips no topo", monta({ chips_position: "header" }).includes("headchips"));
+ok("chips como marca d'água", (() => {
+  const h = monta({ chips_position: "watermark", watermark_align: "top-right" });
+  return h.includes("wmark") && h.includes("wm-top-right");
+})());
+ok("chips no rodapé por padrão", monta({}).includes('class="foot"'));
+
+ok("confirmação desenha o painel", monta({ confirm_accessory: true }).includes('class="confirm"'));
+ok("sem confirmação não há painel", !monta({}).includes('class="confirm"'));
+
+ok("recuo dos controles vai para o CSS", monta({ controls_inset: 21 }).includes("21px"));
+
+ok("cortina maior que o vão", (() => {
+  const sem = monta({ curtain_overhang: 0 });
+  const com = monta({ curtain_overhang: 20 });
+  // com sobra, o pano começa 20 unidades antes do vão (x = 55 - 20 = 35)
+  return com.includes("M35,") && !sem.includes("M35,");
+})());
+ok("varão sobe e estica", (() => {
+  const h = monta({ rod_offset: 10, rod_extend: 30 });
+  return h.includes('class="rod"') && h.includes('x="25"');
+})());
+
+ok("arrastar liga a classe da cena", (() => {
+  const e = new Card();
+  e.setConfig({ opener: "cover.janela_esquerda_da_sala", curtain: "cover.cortina_da_sala",
+    drag_target: "curtain" });
+  e.hass = hass;
+  return e._root.classList.contains("can-drag");
+})());
+ok("sem alvo de arrasto a cena não fica arrastável", (() => {
+  const e = new Card();
+  e.setConfig({ opener: "cover.janela_esquerda_da_sala" });
+  e.hass = hass;
+  return !e._root.classList.contains("can-drag");
+})());
+ok("arrasto move o desenho sem chamar serviço", (() => {
+  const e = new Card();
+  let chamou = false;
+  e.setConfig({ curtain: "cover.cortina_da_sala", drag_target: "curtain" });
+  e.hass = { ...hass, callService: () => { chamou = true; } };
+  e._previewPos("cur", 40);
+  return e._root.style.getPropertyValue("--cl") === "0.600" && !chamou;
+})());
+
+ok("moldura suave tira a cor do papel", (() => {
+  const h = monta({ border_style: "soft", border_width: 5, paper: "violet-5", paper_dark: true });
+  // violeta escuro tom 5 -> matiz 283, clareada para virar a moldura lilás
+  return /border:5px solid hsl\(283,/.test(h);
+})());
+ok("cor da moldura na mão vence a automática",
+  monta({ border_style: "soft", border_color: "#abcdef" }).includes("border:3px solid #abcdef"));
+ok("halo só existe no estilo glow", (() => {
+  // procurar a ASSINATURA do halo, não "qualquer 0 0 Npx rgba(": a bolinha
+  // acesa do acessório também tem uma, e o teste passava por engano
+  const halo = /rgba\((?:180,140,230|120,90,170),/;
+  return !halo.test(monta({ border_style: "soft" }))
+    && halo.test(monta({ border_style: "glow", border_glow: 0.8 }));
+})());
+ok("hover desligado não deixa transição de sombra",
+  !monta({ border_style: "soft" }).includes(":hover{border-color"));
+ok("hover ligado só mexe em sombra e borda", (() => {
+  const h = monta({ border_style: "glow", hover_glow: true });
+  return h.includes(":hover{border-color") && !h.includes("transition:all");
+})());
+ok("sem borda é sem borda", monta({ border_style: "none" }).includes("border:none"));
+
+ok("fonte e cor entram no CSS", (() => {
+  const h = monta({ font_family: "Georgia, serif", font_title: 22, color_title: "#ff0000" });
+  return h.includes("font-family:Georgia, serif") && h.includes("font-size:22px")
+    && h.includes("#ff0000");
+})());
+
 // caminho de 2 folhas
 const el2 = new Card();
 el2.setConfig({ opener: "cover.janela_esquerda_da_sala", curtain: "cover.cortina_da_sala" });
@@ -165,17 +282,19 @@ ed.hass = hass;
 const { DEFAULTS, LABELS } = module.exports;
 const names = [];
 const walk = (s) => s.forEach((f) => (f.type === "expandable" ? walk(f.schema) : names.push(f.name)));
-const PANES = ["janela", "panos", "clima", "extras", "paisagem", "estilo"];
+const PANES = ["janela", "panos", "clima", "extras", "paisagem", "estilo", "textos"];
 // alguns campos só aparecem em certas configurações (o 2º empurrador só com 4
 // folhas, as imagens só na paisagem por horário) — varrer as variantes é o
 // único jeito honesto de saber se um campo tem lugar no editor
-for (const variant of [{}, { panes: 4 }, { scenery: "image" }, { scenery: "image_by_time" }]) {
+for (const variant of [{}, { panes: 4 }, { scenery: "image" }, { scenery: "image_by_time" },
+  { sensor_style: "line" }, { chips_position: "watermark" },
+  { border_style: "soft" }, { border_style: "glow" }]) {
   ed.setConfig({ opener: "cover.janela_esquerda_da_sala", ...variant });
   ed.hass = hass;
   for (const id of PANES) walk(ed._schemaFor(id));
 }
 const declared = [...new Set(names.filter(Boolean))];
-ok("editor cobre 6 abas", declared.length > 30, `${declared.length} campos`);
+ok("editor cobre as 7 abas", declared.length > 60, `${declared.length} campos`);
 
 const semDefault = declared.filter((n) => !(n in DEFAULTS));
 ok("todo campo do editor tem default", semDefault.length === 0, semDefault.join(", "));

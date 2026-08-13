@@ -129,6 +129,44 @@ const CASES = [
     scenery_skyline: "campo", blackout: "cover.blackout", depth: "soft",
   }, { "sensor.t": sens(9.1, "temperature", "°C"), "sensor.h": sens(41, "humidity", "%") }],
 
+  ["Moldura suave com halo · papel violeta escuro (o pedido do card_mod)", {
+    ...BASE, name: "SUÍTE · MOLDURA", paper: "violet-5", paper_dark: true,
+    border_style: "glow", border_width: 5, border_glow: 0.45, hover_glow: true,
+    radius_tl: 18, radius_tr: 18, radius_br: 18, radius_bl: 52,
+    curtain: "cover.cortina", curtain_texture: "veludo",
+    curtain_paper: "violet-4", curtain_dark: true,
+    controls_inset: 14, scenery_skyline: "cidade",
+  }, { "sun.sun": { state: "below_horizon", attributes: { elevation: -24 } } }],
+
+  ["Moldura suave sem halo · papel claro", {
+    ...BASE, name: "SALA · MOLDURA CLARA", paper: "orange-3",
+    border_style: "soft", border_width: 4,
+    radius_tl: 16, radius_tr: 16, radius_br: 16, radius_bl: 16,
+    curtain: "cover.cortina", scenery_skyline: "cidade", controls_inset: 12,
+  }, {}],
+
+  ["Sensor como risco vertical · chips no topo · cortina maior que o vão", {
+    ...BASE, name: "SALA · RISCO E SOBRA", paper: "orange-4",
+    sensor_style: "line", sensor_line_width: 6, sensor_line_inset: 2,
+    chips_position: "header",
+    curtain: "cover.cortina", curtain_texture: "linho",
+    curtain_overhang: 18, curtain_top: 10, curtain_drop: 14,
+    rod_offset: 8, rod_extend: 26, rod_thickness: 6,
+    controls_inset: 16, drag_target: "curtain", confirm_accessory: true,
+    scenery_skyline: "cidade",
+    accessories: [{ type: "exhaust", entity: "fan.exaustor", x: 88, y: 10, size: 24 }],
+  }, {}],
+
+  ["Chips como marca d'água · fonte Georgia · risco + pastilha", {
+    ...BASE, name: "COZINHA · MARCA D'ÁGUA", paper: "yellow-3",
+    chips_position: "watermark", watermark_align: "bottom-left",
+    font_watermark: 22, watermark_opacity: 0.75,
+    sensor_style: "both",
+    font_family: "Georgia, 'Times New Roman', serif",
+    font_title: 16, color_title: "#7a4a12",
+    scenery_skyline: "morros", controls_inset: 14,
+  }, {}],
+
   ["Voil transparente · cortina quase fechada · madeira · cantos assimétricos", {
     ...BASE, name: "SACADA", curtain: "cover.cortina", curtain_texture: "voil",
     curtain_paper: "green-2", frame_tone: "madeira", paper: "green-3",

@@ -161,6 +161,11 @@
     sensor_left: "",
     sensor_right: "",
     sensor_invert: false,
+    // pills = as duas pastilhas do rodapé · line = um risco vertical na borda
+    // do vão, verde/vermelho · both = os dois
+    sensor_style: "pills",
+    sensor_line_width: 5,
+    sensor_line_inset: 0,
 
     // --- clima ---
     temperature: "",
@@ -176,6 +181,15 @@
     curtain_paper: "",           // vazio = usa o papel do card
     curtain_dark: false,
     curtain_rod: true,
+    // Cortina de verdade cobre mais que o vão: sobra dos lados, sobe acima do
+    // vão e desce abaixo dele. Tudo em unidades do desenho (o vão tem 250 de
+    // largura por 166 de altura), então 12 é "um palmo".
+    curtain_overhang: 0,         // quanto passa de cada lado
+    curtain_top: 0,              // quanto começa acima do vão
+    curtain_drop: 0,             // quanto desce abaixo do vão
+    rod_offset: 0,               // sobe o varão
+    rod_extend: 12,              // quanto o varão passa de cada lado
+    rod_thickness: 4.5,
 
     // --- blackout ---
     blackout: "",
@@ -211,6 +225,14 @@
     paper: "paper",
     paper_dark: false,
     depth: "3d",                 // flat | soft | 3d
+    // hairline = o fio discreto de sempre · soft = moldura clara acompanhando
+    // o canto · glow = moldura + halo colorido. A moldura é pintada uma vez;
+    // quem custa caro é blur e sombra animada, que ficam de fora de propósito.
+    border_style: "hairline",    // none | hairline | soft | glow
+    border_width: 3,
+    border_color: "",            // vazio = tirada do próprio tom de papel
+    border_glow: 0.35,
+    hover_glow: false,           // acende no hover (desktop); custa repintura
     frame_tone: "auto",          // auto | claro | escuro | branco | madeira | aluminio
     radius_tl: 12, radius_tr: 12, radius_br: 12, radius_bl: 12,
     scene_height: 300,
@@ -219,11 +241,33 @@
     // --- controles ---
     controls: "auto",            // none | auto | compact | full
     control_labels: true,
+    controls_inset: 6,           // recuo lateral, para o ícone não bater na curva
+
+    // --- chips de clima ---
+    // footer = rodapé (como sempre foi) · header = no topo, junto dos emojis
+    // watermark = marca d'água grande sobre o vidro
+    chips_position: "footer",
+    watermark_opacity: 0.55,
+    watermark_align: "bottom-left",  // canto onde a marca d'água se apoia
+
+    // --- textos ---
+    font_family: "",             // vazio = a fonte do tema
+    font_title: 13, color_title: "",
+    font_summary: 11, color_summary: "",
+    font_chip: 11, color_chip: "",
+    font_control: 11, color_control: "",
+    font_percent: 11, color_percent: "",
+    font_accessory: 9, color_accessory: "",
+    font_watermark: 26, color_watermark: "",
+    font_badge: 15,
 
     // --- ações ---
     tap_action: "more-info",
     hold_action: "none",
     navigation_path: "",
+    // arrastar a cena move a folha/cortina/blackout com o dedo
+    drag_target: "none",         // none | opener | opener_right | curtain | blackout
+    confirm_accessory: false,    // acessório pergunta antes de acionar
   };
 
   /* ============================ utilidades ============================ */
@@ -258,6 +302,22 @@
   };
 
   const batteryColor = (v) => (v <= 20 ? "#e53935" : v <= 50 ? "#fdd835" : v <= 70 ? "#9ccc65" : "#43a047");
+
+  /* Cor da moldura tirada do próprio papel: mesma matiz, afastada em
+   * luminosidade para aparecer. No papel escuro ela CLAREIA (é o lilás da
+   * moldura roxa); no claro, escurece. Assim a borda combina sozinha com o
+   * tom escolhido, em vez de virar mais um campo de cor para acertar na mão. */
+  const paperEdge = (key, dark) => {
+    const m = /^([a-z]+)-([1-7])$/.exec(String(key || "").trim());
+    const table = dark ? PAPER_DARK_TONES : PAPER_TONES;
+    if (!m) return dark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.20)";
+    const hue = (dark ? PAPER_DARK_HUES : PAPER_HUES).find((h) => h[0] === m[1]);
+    if (!hue) return dark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.20)";
+    const [l, s] = table[+m[2] - 1];
+    return dark
+      ? `hsl(${hue[2]}, ${Math.min(60, s + 14)}%, ${Math.min(72, l + 26)}%)`
+      : `hsl(${hue[2]}, ${Math.min(60, s + 10)}%, ${Math.max(30, l - 26)}%)`;
+  };
 
   /* ======================= geometria da cena ======================= */
   // Um sistema de coordenadas só, em unidades de usuário do SVG. A janela não
@@ -544,15 +604,15 @@
   // Cortina: painel de pregas. A largura é fixa e a abertura entra como
   // scaleX — encolher horizontalmente é exatamente o que o tecido faz ao
   // franzir, e as pregas (que estão no gradiente) acompanham de graça.
-  const curtainPanel = (side, x, w) => {
+  const curtainPanel = (side, x, w, top, bottom) => {
     const pleats = 9;
     const step = w / pleats;
-    let d = `M${x},${GL.y} L${x + w},${GL.y} L${x + w},${GL.y + GL.h - 8}`;
+    let d = `M${x},${top} L${x + w},${top} L${x + w},${bottom - 8}`;
     // barra inferior ondulada, uma barriga por prega
     for (let i = pleats; i > 0; i--) {
       const x1 = x + (i - 1) * step;
       const cx = x1 + step / 2;
-      d += ` Q${cx},${GL.y + GL.h + (i % 2 ? 7 : 1)} ${x1},${GL.y + GL.h - 8}`;
+      d += ` Q${cx},${bottom + (i % 2 ? 7 : 1)} ${x1},${bottom - 8}`;
     }
     d += " Z";
     return `<g class="curtain ${side}"><path class="cloth" d="${d}"/></g>`;
@@ -580,7 +640,13 @@
       const shape = JSON.stringify([cfg.panes, cfg.slide, cfg.curtain, cfg.blackout, cfg.opener,
         cfg.opener_right, cfg.scenery, cfg.scenery_skyline, cfg.animate, cfg.controls,
         cfg.accessories, cfg.ac_duct, cfg.curtain_texture, cfg.curtain_open_from, cfg.depth,
-        cfg.show_header, cfg.show_footer, cfg.paper, cfg.paper_dark]);
+        cfg.show_header, cfg.show_footer, cfg.paper, cfg.paper_dark,
+        // geometria e lugar das coisas: mudar qualquer um remonta o SVG
+        cfg.sensor_style, cfg.sensor_line_width, cfg.sensor_line_inset,
+        cfg.sensor_left, cfg.sensor_right, cfg.chips_position, cfg.watermark_align,
+        cfg.confirm_accessory, cfg.curtain_rod, cfg.curtain_overhang, cfg.curtain_top,
+        cfg.curtain_drop, cfg.rod_offset, cfg.rod_extend, cfg.rod_thickness,
+        cfg.temperature, cfg.humidity, cfg.drag_target]);
       const changed = shape !== this._shape;
       this._shape = shape;
       this._config = cfg;
@@ -701,6 +767,7 @@
         title: $(".title"), summary: $(".summary"),
         temp: $(".v-temp"), hum: $(".v-hum"), bat: $(".v-bat"), batIcon: $(".i-bat"),
         dotL: $(".dot-l"), dotR: $(".dot-r"), badges: $(".badges"),
+        lineL: $(".sl-l"), lineR: $(".sl-r"),
         sceneImg: $(".sceneryImg"),
       };
       this._wire();
@@ -716,24 +783,41 @@
       return { a: m[0] || (dark ? "#2b2825" : "#fdfaf3"), b: m[1] || (dark ? "#161411" : "#e8e3d8") };
     }
 
+    // As pastilhas são as mesmas em qualquer lugar; muda só onde entram.
+    // As pastilhas de sensor só aparecem no estilo "pills"/"both" — quem
+    // escolheu o risco vertical não quer a informação duas vezes.
+    _chips(c, wm) {
+      const bits = [];
+      // marca d'água é para ler de longe: "Esq./Dir." vira ruído lá, e quem
+      // quer o estado de abertura sobre o vidro já tem o risco vertical
+      const dots = c.sensor_style !== "line" && !wm;
+      if (dots && c.sensor_left) bits.push(`<span class="pill"><i class="dot dot-l"></i>Esq.</span>`);
+      if (dots && c.sensor_right) bits.push(`<span class="pill"><i class="dot dot-r"></i>Dir.</span>`);
+      if (c.temperature) bits.push(`<span class="pill chip-t"><ha-icon icon="mdi:thermometer"></ha-icon><b class="v-temp">--</b></span>`);
+      if (c.humidity) bits.push(`<span class="pill chip-h"><ha-icon icon="mdi:water-percent"></ha-icon><b class="v-hum">--</b></span>`);
+      bits.push(`<span class="pill bat"><ha-icon class="i-bat" icon="mdi:battery-unknown"></ha-icon><b class="v-bat">--</b></span>`);
+      return bits.join("");
+    }
+
     _header(c) {
       if (c.show_header === false) return "";
+      const noTopo = c.chips_position === "header" && c.show_footer !== false;
       return `<div class="head">
         <div class="titlewrap"><div class="title"></div>
           ${c.show_summary === false ? "" : `<div class="summary"></div>`}</div>
+        ${noTopo ? `<div class="headchips">${this._chips(c)}</div>` : ""}
         <div class="badges"></div>
       </div>`;
     }
 
     _footer(c) {
-      if (c.show_footer === false) return "";
-      const bits = [];
-      if (c.sensor_left) bits.push(`<span class="pill"><i class="dot dot-l"></i>Esq.</span>`);
-      if (c.sensor_right) bits.push(`<span class="pill"><i class="dot dot-r"></i>Dir.</span>`);
-      if (c.temperature) bits.push(`<span class="pill chip-t"><ha-icon icon="mdi:thermometer"></ha-icon><b class="v-temp">--</b></span>`);
-      if (c.humidity) bits.push(`<span class="pill chip-h"><ha-icon icon="mdi:water-percent"></ha-icon><b class="v-hum">--</b></span>`);
-      bits.push(`<span class="pill bat"><ha-icon class="i-bat" icon="mdi:battery-unknown"></ha-icon><b class="v-bat">--</b></span>`);
-      return `<div class="foot">${bits.join("")}</div>`;
+      if (c.show_footer === false || c.chips_position !== "footer") return "";
+      return `<div class="foot">${this._chips(c)}</div>`;
+    }
+
+    _watermark(c) {
+      if (c.show_footer === false || c.chips_position !== "watermark") return "";
+      return `<div class="wmark wm-${esc(c.watermark_align || "bottom-left")}">${this._chips(c, true)}</div>`;
     }
 
     /* ------------------------------ cena ------------------------------ */
@@ -762,18 +846,40 @@
       // por trás da outra e quem divide o vidro é a esquadria de cada folha
       // (`.sash`). Um risco fixo no centro ficava por cima da folha aberta.
 
+      // A cortina não vive dentro do vão: em casa ela sobra dos lados, sobe
+      // acima e desce abaixo. Por isso ela é desenhada FORA do recorte, e na
+      // frente da esquadria — que é onde o pano fica de verdade.
+      const ovh = numOr(c.curtain_overhang, 0);
+      const cX = GL.x - ovh;
+      const cW = GL.w + 2 * ovh;
+      const cTop = GL.y - numOr(c.curtain_top, 0);
+      const cBot = GL.y + GL.h + numOr(c.curtain_drop, 0);
       const curtains = c.curtain ? (c.curtain_open_from === "sides"
-        ? curtainPanel("cl", GL.x, GL.w / 2) + curtainPanel("cr", GL.x + GL.w / 2, GL.w / 2)
+        ? curtainPanel("cl", cX, cW / 2, cTop, cBot) + curtainPanel("cr", cX + cW / 2, cW / 2, cTop, cBot)
         : c.curtain_open_from === "right"
-          ? curtainPanel("cr", GL.x, GL.w)
-          : curtainPanel("cl", GL.x, GL.w)) : "";
+          ? curtainPanel("cr", cX, cW, cTop, cBot)
+          : curtainPanel("cl", cX, cW, cTop, cBot)) : "";
 
+      const rodT = numOr(c.rod_thickness, 4.5);
+      const rodY = cTop - 9 - numOr(c.rod_offset, 0);
+      const rodE = numOr(c.rod_extend, 12);
       const rod = (c.curtain && c.curtain_rod !== false) ? `
         <g class="rod">
-          <rect x="${GL.x - 12}" y="${GL.y - 9}" width="${GL.w + 24}" height="4.5" rx="2.25"/>
-          <circle cx="${GL.x - 13}" cy="${GL.y - 6.75}" r="4"/>
-          <circle cx="${GL.x + GL.w + 13}" cy="${GL.y - 6.75}" r="4"/>
+          <rect x="${cX - rodE}" y="${rodY}" width="${cW + 2 * rodE}" height="${rodT}" rx="${rodT / 2}"/>
+          <circle cx="${cX - rodE - 1}" cy="${rodY + rodT / 2}" r="${rodT * 0.89}"/>
+          <circle cx="${cX + cW + rodE + 1}" cy="${rodY + rodT / 2}" r="${rodT * 0.89}"/>
         </g>` : "";
+
+      // Sensor como risco vertical na borda do vão: verde aberto, vermelho
+      // fechado. É a leitura de relance que a pastilha do rodapé não dá.
+      const lw = numOr(c.sensor_line_width, 5);
+      const li = numOr(c.sensor_line_inset, 0);
+      const showLine = c.sensor_style === "line" || c.sensor_style === "both";
+      const sline = (side) => `<rect class="sl sl-${side}" rx="${lw / 2}"
+        x="${side === "l" ? GL.x - lw - li : GL.x + GL.w + li}" y="${GL.y}"
+        width="${lw}" height="${GL.h}"/>`;
+      const lines = showLine
+        ? (c.sensor_left ? sline("l") : "") + (c.sensor_right ? sline("r") : "") : "";
 
       const blackout = c.blackout ? `
         <g class="bo">
@@ -866,14 +972,23 @@
             ${painted}${sceneryImg}${fx}
             ${glass}
             ${blackout}
-            ${curtains}
           </g>
           <rect class="frame" x="${FR.x}" y="${FR.y}" width="${FR.w}" height="${FR.h}" rx="3"/>
           <rect class="frameIn" x="${GL.x - 1.5}" y="${GL.y - 1.5}" width="${GL.w + 3}" height="${GL.h + 3}" rx="2"/>
           <rect class="sill" x="${SILL.x}" y="${SILL.y}" width="${SILL.w}" height="${SILL.h}" rx="2.5"/>
-          ${rod}${ducts}
+          ${curtains}${rod}${ducts}
+          <!-- o risco vai por ÚLTIMO: com cortina sobrando dos lados ele
+               ficava escondido atrás do pano, e indicador que some não indica -->
+          ${lines}
         </svg>
+        ${this._watermark(c)}
         <div class="acc">${acc}</div>
+        ${c.confirm_accessory ? `<div class="confirm" hidden>
+          <div class="cbox"><span class="ctxt"></span>
+            <span class="crow">
+              <button class="cno" type="button">Não</button>
+              <button class="cyes" type="button">Sim</button>
+            </span></div></div>` : ""}
       </div>`;
     }
 
@@ -970,13 +1085,30 @@
       const R = `${numOr(c.radius_tl, 12)}px ${numOr(c.radius_tr, 12)}px ${numOr(c.radius_br, 12)}px ${numOr(c.radius_bl, 12)}px`;
       const sheer = c.curtain_texture === "voil";
 
+      /* Moldura. `border` de verdade acompanha o `border-radius` sozinho e é
+       * pintada uma vez — nenhum custo por quadro. O halo é um box-shadow
+       * estático; o único que repinta é o do hover, e só do card sob o mouse.
+       * Fora daqui de propósito: backdrop-filter (caro de verdade) e
+       * `transition: all`, que animaria sombra a cada mudança de estado. */
+      const bs = c.border_style || "hairline";
+      const edge = c.border_color || paperEdge(c.paper, dark);
+      const bw = clamp(numOr(c.border_width, 3), 0, 24);
+      const glow = clamp(numOr(c.border_glow, 0.35), 0, 1);
+      const border = bs === "none" ? "none"
+        : bs === "hairline" ? `1px solid ${ink.line}`
+        : `${bw}px solid ${edge}`;
+      const halo = bs === "glow" && glow > 0
+        ? `,0 0 ${Math.round(10 + glow * 26)}px rgba(${dark ? "180,140,230" : "120,90,170"},${glow.toFixed(2)})`
+        : "";
+
       return `
 :host{display:block;}
 .root{
   box-sizing:border-box;padding:${numOr(c.padding, 10)}px;border-radius:${R};
   background-image:${paperBg};background-color:${dark ? "#1b1917" : "#f4f0e6"};
-  border:1px solid ${ink.line};box-shadow:${shadow};transform:${lift};
+  border:${border};box-shadow:${shadow}${halo};transform:${lift};
   color:${ink.text};overflow:hidden;
+  ${c.font_family ? `font-family:${c.font_family};` : ""}
   --ink:${ink.text};--dim:${ink.dim};--line:${ink.line};
   --fr-a:${fr.a};--fr-b:${fr.b};--fr-c:${fr.c};
   --o1:0;--o2:0;--cur:1;--cl:1;--cr:1;--bo:0;
@@ -986,17 +1118,32 @@
   transition:background-color 400ms ease;
 }
 .root.paused *{animation-play-state:paused !important;}
+${c.hover_glow && bs !== "none" ? `
+/* só no hover, e só box-shadow/border-color — nada de \`transition: all\`,
+   que animaria sombra a cada mudança de estado do HA */
+@media (hover:hover){
+  .root{transition:box-shadow 260ms ease,border-color 260ms ease,
+    background-color 400ms ease;}
+  .root:hover{border-color:${edge};
+    box-shadow:${shadow},0 0 ${Math.round(14 + glow * 30)}px
+      rgba(${dark ? "190,150,240" : "130,100,180"},${Math.max(0.3, glow).toFixed(2)});}
+}` : ""}
 @media (prefers-reduced-motion:reduce){.root *{animation-play-state:paused !important;transition-duration:1ms !important;}}
 
 /* ---------- cabeçalho ---------- */
-.head{display:flex;align-items:center;gap:8px;padding:0 2px 7px;}
-.titlewrap{min-width:0;flex:1;}
-.title{font-size:13px;font-weight:700;letter-spacing:1.1px;line-height:1.2;
+/* com as pastilhas no topo o cabeçalho pode virar duas linhas: numa coluna
+   estreita elas espremiam o nome até virar «SALA · RI…» */
+.head{display:flex;align-items:center;gap:8px;padding:0 2px 7px;flex-wrap:wrap;}
+.titlewrap{min-width:0;flex:1 1 55%;}
+.title{font-size:${numOr(c.font_title, 13)}px;font-weight:700;letter-spacing:1.1px;line-height:1.2;
   text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:${c.color_title || "var(--ink)"};
   text-shadow:0 1px 1px rgba(0,0,0,${dark ? 0.6 : 0.14});}
-.summary{font-size:11px;color:var(--dim);line-height:1.3;margin-top:1px;
+.summary{font-size:${numOr(c.font_summary, 11)}px;color:${c.color_summary || "var(--dim)"};
+  line-height:1.3;margin-top:1px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.badges{display:flex;gap:3px;font-size:15px;line-height:1;flex:none;}
+.badges{display:flex;gap:3px;font-size:${numOr(c.font_badge, 15)}px;line-height:1;flex:none;}
+.headchips{display:flex;gap:4px;flex:1 1 auto;flex-wrap:wrap;justify-content:flex-end;}
 
 /* ---------- cena ----------
    A caixa da cena tem EXATAMENTE a proporção do viewBox. Sem isso o SVG
@@ -1041,6 +1188,18 @@
 .frame{fill:none;stroke:url(#wcFrame);stroke-width:${FR.t};}
 .frameIn{fill:none;stroke:rgba(0,0,0,.22);stroke-width:1;}
 .sill{fill:url(#wcFrame);filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));}
+
+/* risco do sensor de abertura, na borda do vão */
+.sl{fill:#9e9e9e;transition:fill 300ms ease,filter 300ms ease;}
+.sl.open{fill:#9acd32;filter:drop-shadow(0 0 4px rgba(154,205,50,.9));}
+.sl.closed{fill:#ff6347;}
+
+/* arrastar: enquanto o dedo está na cena a folha segue sem transição, senão
+   ela "persegue" o dedo com meio segundo de atraso */
+.root.dragging .pane,.root.dragging .curtain,.root.dragging .boCloth,
+.root.dragging .boBar{transition:none;}
+.root.can-drag .scene{cursor:grab;touch-action:pan-y;}
+.root.dragging .scene{cursor:grabbing;}
 
 /* ---------- cortina ---------- */
 .curtain{transition:transform var(--dur) cubic-bezier(.4,.75,.3,1);transform-box:fill-box;}
@@ -1111,13 +1270,50 @@
 .a.spin.on ha-icon{animation:spin 1.1s linear infinite;}
 .a.spin.slow.on ha-icon{animation-duration:2.4s;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.a .av{position:absolute;bottom:-13px;font-size:9px;font-weight:700;color:var(--ink);
+.a .av{position:absolute;bottom:-13px;font-size:${numOr(c.font_accessory, 9)}px;font-weight:700;
+  color:${c.color_accessory || "var(--ink)"};
   white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.45);}
+
+/* ---------- confirmação do acessório ---------- */
+.confirm{position:absolute;inset:0;display:grid;place-items:center;z-index:4;
+  background:rgba(0,0,0,.45);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
+.confirm[hidden]{display:none;}
+.cbox{display:flex;flex-direction:column;gap:8px;align-items:center;padding:12px 16px;
+  border-radius:12px;background:${dark ? "rgba(32,30,28,.96)" : "rgba(253,250,243,.97)"};
+  border:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.45);max-width:88%;}
+.ctxt{font-size:12.5px;font-weight:600;text-align:center;color:var(--ink);}
+.crow{display:flex;gap:8px;}
+.crow button{padding:6px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;
+  border:1px solid var(--line);background:rgba(${dark ? "255,255,255,.08" : "0,0,0,.05"});
+  color:var(--ink);}
+.crow .cyes{background:#9acd32;color:#1a1a1a;border-color:#9acd32;}
+.crow button:active{transform:translateY(1px);}
 .a-socket.on{background:rgba(150,220,140,.85);color:#12220f;box-shadow:0 0 10px rgba(140,220,130,.7);}
 
-/* ---------- rodapé ---------- */
-.foot{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:7px 2px 0;}
-.pill{display:inline-flex;align-items:center;gap:3px;font-size:11px;line-height:1;
+/* ---------- rodapé e marca d'água ---------- */
+.foot{display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+  padding:7px ${numOr(c.controls_inset, 6)}px 0;}
+/* marca d'água: as mesmas pastilhas, pousadas sobre o vidro. Sem receber
+   ponteiro, para não roubar o arrasto da cortina que passa por baixo. */
+/* empilhada, não em linha: lado a lado as pastilhas grandes se atropelam e
+   atravessam a janela inteira */
+.wmark{position:absolute;display:flex;flex-direction:column;gap:5px;pointer-events:none;
+  opacity:${clamp(numOr(c.watermark_opacity, 0.55), 0, 1)};max-width:70%;}
+.wm-bottom-left{left:6%;bottom:11%;align-items:flex-start;}
+.wm-bottom-right{right:6%;bottom:11%;align-items:flex-end;}
+.wm-top-left{left:6%;top:8%;align-items:flex-start;}
+.wm-top-right{right:6%;top:8%;align-items:flex-end;}
+.wm-center{left:50%;top:50%;transform:translate(-50%,-50%);align-items:center;}
+.wmark .pill{font-size:${numOr(c.font_watermark, 26)}px;padding:4px 10px;
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  ${c.color_watermark ? `color:${c.color_watermark};` : ""}
+  border-color:rgba(255,255,255,.28);text-shadow:0 1px 3px rgba(0,0,0,.5);}
+.wmark .pill ha-icon{--mdc-icon-size:${Math.round(numOr(c.font_watermark, 26) * 0.9)}px;
+  width:${Math.round(numOr(c.font_watermark, 26) * 0.9)}px;
+  height:${Math.round(numOr(c.font_watermark, 26) * 0.9)}px;}
+.pill{display:inline-flex;align-items:center;gap:3px;
+  font-size:${numOr(c.font_chip, 11)}px;line-height:1;
+  ${c.color_chip ? `color:${c.color_chip};` : ""}
   padding:3px 7px;border-radius:999px;border:1px solid var(--line);
   background:rgba(${dark ? "255,255,255,.05" : "0,0,0,.035"});}
 .pill ha-icon{--mdc-icon-size:13px;width:13px;height:13px;opacity:.85;}
@@ -1128,14 +1324,19 @@
 .dot.open{background:#9acd32;box-shadow:0 0 6px rgba(154,205,50,.8);}
 .dot.closed{background:#ff6347;}
 
-/* ---------- controles ---------- */
-.ctls{display:grid;gap:5px;padding:8px 2px 1px;margin-top:6px;border-top:1px solid var(--line);}
+/* ---------- controles ----------
+   O recuo lateral existe porque o card tem canto arredondado: com padding 2px
+   o ícone da cortina encostava na curva. */
+.ctls{display:grid;gap:5px;margin-top:6px;border-top:1px solid var(--line);
+  padding:8px ${numOr(c.controls_inset, 6)}px 1px;}
 .ctl{display:grid;grid-template-columns:auto ${c.control_labels === false ? "" : "minmax(0,1fr)"} auto minmax(60px,1.2fr) auto;
   align-items:center;gap:7px;}
 .ctls.compact .ctl{grid-template-columns:auto ${c.control_labels === false ? "" : "minmax(0,1fr)"} auto minmax(40px,1fr) auto;}
 .ci{--mdc-icon-size:17px;width:17px;height:17px;opacity:.85;}
-.cl{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cp{font-size:11px;font-weight:700;min-width:32px;text-align:right;font-variant-numeric:tabular-nums;}
+.cl{font-size:${numOr(c.font_control, 11)}px;color:${c.color_control || "var(--dim)"};
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cp{font-size:${numOr(c.font_percent, 11)}px;font-weight:700;min-width:32px;text-align:right;
+  ${c.color_percent ? `color:${c.color_percent};` : ""}font-variant-numeric:tabular-nums;}
 .cs{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:var(--line);outline:none;}
 .cs::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
   background:var(--ink);border:2px solid ${dark ? "#1b1917" : "#fdfaf3"};cursor:pointer;
@@ -1176,12 +1377,15 @@
       const S = this._root.style;
       const panes = c.panes === 4 ? 4 : 2;
       const pw = GL.w / panes;
+      // o que está debaixo do dedo não é repintado: o estado velho do HA
+      // puxaria a cortina de volta no meio do arrasto
+      const dk = this._dragging;
 
       // abertura: 0 = fechada, 1 = folha inteiramente recolhida
       const o1 = r.op1 ? r.op1.pos / 100 : 0;
       const o2 = r.op2 ? r.op2.pos / 100 : (panes === 4 ? o1 : 0);
-      S.setProperty("--o1", o1.toFixed(3));
-      S.setProperty("--o2", o2.toFixed(3));
+      if (dk !== "op1") S.setProperty("--o1", o1.toFixed(3));
+      if (dk !== "op2" && dk !== "op1") S.setProperty("--o2", o2.toFixed(3));
       if (panes === 2) {
         S.setProperty("--t1", `${c.slide === "right" ? pw : -pw}px`);
         S.setProperty("--t2", "0px");
@@ -1193,16 +1397,20 @@
 
       // cortina: cover 100 = aberta; cobertura é o complemento
       const covC = r.cur ? (100 - r.cur.pos) / 100 : 0;
-      if (c.curtain_open_from === "sides") {
-        S.setProperty("--cl", covC.toFixed(3));
-        S.setProperty("--cr", covC.toFixed(3));
-      } else {
-        S.setProperty("--cl", c.curtain_open_from === "right" ? "0" : covC.toFixed(3));
-        S.setProperty("--cr", c.curtain_open_from === "right" ? covC.toFixed(3) : "0");
+      if (dk !== "cur") {
+        if (c.curtain_open_from === "sides") {
+          S.setProperty("--cl", covC.toFixed(3));
+          S.setProperty("--cr", covC.toFixed(3));
+        } else {
+          S.setProperty("--cl", c.curtain_open_from === "right" ? "0" : covC.toFixed(3));
+          S.setProperty("--cr", c.curtain_open_from === "right" ? covC.toFixed(3) : "0");
+        }
       }
       const covB = r.bo ? (100 - r.bo.pos) / 100 : 0;
-      S.setProperty("--bo", covB.toFixed(3));
-      S.setProperty("--bo-on", covB > 0.01 ? "1" : "0");
+      if (dk !== "bo") {
+        S.setProperty("--bo", covB.toFixed(3));
+        S.setProperty("--bo-on", covB > 0.01 ? "1" : "0");
+      }
 
       // céu e astro
       const ph = r.phase;
@@ -1268,6 +1476,8 @@
       };
       dot(this._el.dotL, r.sl);
       dot(this._el.dotR, r.sr);
+      dot(this._el.lineL, r.sl);
+      dot(this._el.lineR, r.sr);
 
       // cabeçalho
       if (this._el.title) {
@@ -1429,30 +1639,139 @@
           const a = (this._config.accessories || [])[Number(btn.dataset.i)];
           if (!a || !a.entity) return;
           const dom = a.entity.split(".")[0];
-          if (a.tap === "more-info" || ["sensor", "binary_sensor"].includes(dom)) {
-            this._moreInfo(a.entity);
-          } else {
-            this._hass.callService("homeassistant", "toggle", { entity_id: a.entity });
-          }
+          const info = a.tap === "more-info" || ["sensor", "binary_sensor"].includes(dom);
+          if (info) { this._moreInfo(a.entity); return; }
+          const run = () => this._hass.callService("homeassistant", "toggle", { entity_id: a.entity });
+          if (this._config.confirm_accessory) this._ask(a, run); else run();
         });
       });
 
-      const scene = root.querySelector(".scene");
-      if (scene) {
-        let hold = null, held = false;
-        const target = this._config.opener || this._config.curtain ||
-          this._config.blackout || this._config.sensor_left;
-        scene.addEventListener("pointerdown", () => {
-          held = false;
-          hold = setTimeout(() => { held = true; hold = null; this._act(this._config.hold_action, target); }, 500);
-        });
-        ["pointerleave", "pointercancel"].forEach((t) =>
-          scene.addEventListener(t, () => { if (hold) { clearTimeout(hold); hold = null; } }));
-        scene.addEventListener("pointerup", (ev) => {
-          if (hold) { clearTimeout(hold); hold = null; }
-          if (held || ev.target.closest(".a")) return;
-          this._act(this._config.tap_action, target);
-        });
+      this._wireConfirm();
+      this._wireScene();
+    }
+
+    // Confirmação: painel sobre a cena, com o nome do que vai acontecer.
+    // Preferi isto a "toque duas vezes" porque acessório é alvo pequeno —
+    // exigir pontaria duas vezes seria pior, não mais seguro.
+    _ask(a, run) {
+      const box = this.shadowRoot.querySelector(".confirm");
+      if (!box) { run(); return; }
+      const st = a.entity ? this._hass.states[a.entity] : null;
+      const nome = a.label || st?.attributes?.friendly_name || a.entity;
+      const verbo = st && (st.state === "on" || st.state === "open") ? "Desligar" : "Ligar";
+      box.querySelector(".ctxt").textContent = `${verbo} ${nome}?`;
+      this._pending = run;
+      box.hidden = false;
+    }
+
+    _wireConfirm() {
+      const box = this.shadowRoot.querySelector(".confirm");
+      if (!box) return;
+      const close = () => { box.hidden = true; this._pending = null; };
+      box.addEventListener("click", (ev) => { ev.stopPropagation(); if (ev.target === box) close(); });
+      box.querySelector(".cno").addEventListener("click", (ev) => { ev.stopPropagation(); close(); });
+      box.querySelector(".cyes").addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const run = this._pending;
+        close();
+        if (run) run();
+      });
+    }
+
+    /* Toque, toque longo e — quando ligado — ARRASTAR a cena para mover a
+     * folha, a cortina ou o blackout com o dedo. O arrasto vence o toque:
+     * passou do limiar, o `pointerup` não dispara `tap_action`. */
+    _wireScene() {
+      const scene = this._root.querySelector(".scene");
+      if (!scene) return;
+      const c = this._config;
+      const target = c.opener || c.curtain || c.blackout || c.sensor_left;
+      const dragKey = { opener: "op1", opener_right: "op2", curtain: "cur", blackout: "bo" }[c.drag_target];
+      const dragId = { op1: c.opener, op2: c.opener_right, cur: c.curtain, bo: c.blackout }[dragKey];
+      const canDrag = !!dragId;
+      this._root.classList.toggle("can-drag", canDrag);
+
+      let hold = null, held = false, dragging = false, startPos = 0, x0 = 0, y0 = 0, live = 0;
+
+      const clearHold = () => { if (hold) { clearTimeout(hold); hold = null; } };
+
+      scene.addEventListener("pointerdown", (ev) => {
+        held = false; dragging = false;
+        x0 = ev.clientX; y0 = ev.clientY;
+        if (canDrag) {
+          const info = this._read()[dragKey];
+          startPos = info ? info.pos : 0;
+          live = startPos;
+        }
+        hold = setTimeout(() => { held = true; hold = null; this._act(c.hold_action, target); }, 500);
+      });
+
+      scene.addEventListener("pointermove", (ev) => {
+        if (!canDrag || held) return;
+        const dx = ev.clientX - x0;
+        const dy = ev.clientY - y0;
+        // blackout desce e sobe; folha e cortina correm de lado
+        const vertical = dragKey === "bo";
+        const delta = vertical ? -dy : dx;
+        if (!dragging && Math.abs(delta) < 6) return;
+        if (!dragging) {
+          dragging = true;
+          clearHold();
+          this._root.classList.add("dragging");
+          scene.setPointerCapture?.(ev.pointerId);
+        }
+        ev.preventDefault();
+        const rect = scene.getBoundingClientRect();
+        const span = vertical ? rect.height : rect.width;
+        live = clamp(Math.round(startPos + (delta / Math.max(1, span)) * 100), 0, 100);
+        this._previewPos(dragKey, live);
+      });
+
+      const endDrag = (ev) => {
+        clearHold();
+        if (!dragging) return;
+        dragging = false;
+        this._root.classList.remove("dragging");
+        scene.releasePointerCapture?.(ev.pointerId);
+        this._dragging = null;
+        let v = live;
+        if (dragKey.startsWith("op") && c.invert_position) v = 100 - v;
+        this._hass.callService("cover", "set_cover_position", { entity_id: dragId, position: v });
+      };
+
+      scene.addEventListener("pointerup", (ev) => {
+        const arrastou = dragging;
+        endDrag(ev);
+        if (held || arrastou || ev.target.closest(".a") || ev.target.closest(".confirm")) return;
+        this._act(c.tap_action, target);
+      });
+      ["pointerleave", "pointercancel"].forEach((t) =>
+        scene.addEventListener(t, (ev) => { clearHold(); endDrag(ev); }));
+    }
+
+    // Move só o desenho, sem falar com o HA — o serviço vai no fim do arrasto.
+    // `_dragging` segura a repintura para o estado antigo não puxar de volta.
+    _previewPos(key, pos) {
+      const c = this._config;
+      const S = this._root.style;
+      this._dragging = key;
+      if (key === "op1" || key === "op2") {
+        S.setProperty(key === "op1" ? "--o1" : "--o2", (pos / 100).toFixed(3));
+        if (c.panes === 4 && !c.opener_right) S.setProperty("--o2", (pos / 100).toFixed(3));
+      } else if (key === "cur") {
+        const cov = ((100 - pos) / 100).toFixed(3);
+        if (c.curtain_open_from === "sides") { S.setProperty("--cl", cov); S.setProperty("--cr", cov); }
+        else S.setProperty(c.curtain_open_from === "right" ? "--cr" : "--cl", cov);
+      } else if (key === "bo") {
+        S.setProperty("--bo", ((100 - pos) / 100).toFixed(3));
+        S.setProperty("--bo-on", pos < 99 ? "1" : "0");
+      }
+      const ctl = this._ctlEls && this._ctlEls[key];
+      if (ctl) {
+        const p = ctl.querySelector(".cp");
+        if (p) p.textContent = `${pos}%`;
+        const s = ctl.querySelector(".cs");
+        if (s) s.value = String(pos);
       }
     }
 
@@ -1494,6 +1813,9 @@
     sensor_left: "Sensor de abertura · esquerda",
     sensor_right: "Sensor de abertura · direita",
     sensor_invert: "Sensores invertidos (ligado = fechado)",
+    sensor_style: "Como mostrar os sensores",
+    sensor_line_width: "Espessura do risco",
+    sensor_line_inset: "Afastamento do risco",
     temperature: "Sensor de temperatura",
     humidity: "Sensor de umidade",
     battery: "Bateria do sensor",
@@ -1505,6 +1827,12 @@
     curtain_paper: "Tom de papel da cortina (vazio = o do card)",
     curtain_dark: "Cortina em papel escuro",
     curtain_rod: "Desenhar o varão",
+    curtain_overhang: "Sobra da cortina em cada lado",
+    curtain_top: "Quanto a cortina começa acima do vão",
+    curtain_drop: "Quanto a cortina desce abaixo do vão",
+    rod_offset: "Subir o varão",
+    rod_extend: "Quanto o varão passa de cada lado",
+    rod_thickness: "Espessura do varão",
     blackout: "Blackout",
     blackout_paper: "Tom de papel do blackout",
     blackout_dark: "Blackout em papel escuro",
@@ -1529,15 +1857,35 @@
     paper: "Tom de papel do card",
     paper_dark: "Papel escuro",
     depth: "Relevo",
+    border_style: "Borda do card",
+    border_width: "Espessura da moldura",
+    border_color: "Cor da moldura (vazio = tirada do papel)",
+    border_glow: "Intensidade do halo",
+    hover_glow: "Acender ao passar o mouse (só no desktop)",
     frame_tone: "Cor da esquadria",
     radius_tl: "Canto ↖", radius_tr: "Canto ↗", radius_br: "Canto ↘", radius_bl: "Canto ↙",
     scene_height: "Altura máxima da cena",
     padding: "Folga interna",
     controls: "Controles",
     control_labels: "Mostrar o rótulo de cada controle",
+    controls_inset: "Recuo lateral dos controles",
+    chips_position: "Onde ficam temperatura, umidade e bateria",
+    watermark_opacity: "Opacidade da marca d'água",
+    watermark_align: "Canto da marca d'água",
     tap_action: "Toque na cena",
     hold_action: "Toque longo na cena",
     navigation_path: "Caminho para navegar",
+    drag_target: "Arrastar na cena move",
+    confirm_accessory: "Pedir confirmação ao tocar num acessório",
+    font_family: "Fonte (vazio = a do tema)",
+    font_title: "Nome: tamanho", color_title: "Nome: cor",
+    font_summary: "Resumo: tamanho", color_summary: "Resumo: cor",
+    font_chip: "Pastilhas: tamanho", color_chip: "Pastilhas: cor",
+    font_control: "Rótulo do controle: tamanho", color_control: "Rótulo do controle: cor",
+    font_percent: "Porcentagem: tamanho", color_percent: "Porcentagem: cor",
+    font_accessory: "Acessório: tamanho", color_accessory: "Acessório: cor",
+    font_watermark: "Marca d'água: tamanho", color_watermark: "Marca d'água: cor",
+    font_badge: "Emojis do topo: tamanho",
   };
 
   const OPT = {
@@ -1565,6 +1913,10 @@
       { value: "dew", label: "Orvalho no vidro" }, { value: "none", label: "Nenhum" }],
     depth: [{ value: "3d", label: "3D (relevo de papel)" }, { value: "soft", label: "Suave" },
       { value: "flat", label: "Chapado" }],
+    border_style: [{ value: "hairline", label: "Fio discreto (padrão)" },
+      { value: "soft", label: "Moldura suave, na cor do papel" },
+      { value: "glow", label: "Moldura suave com halo" },
+      { value: "none", label: "Sem borda" }],
     frame_tone: [{ value: "auto", label: "Automático (segue o papel)" },
       { value: "claro", label: "Claro" }, { value: "escuro", label: "Escuro" },
       { value: "branco", label: "Branco" }, { value: "madeira", label: "Madeira" },
@@ -1573,6 +1925,21 @@
       { value: "compact", label: "Compacto" }, { value: "none", label: "Nenhum" }],
     actions: [{ value: "more-info", label: "Abrir detalhes" }, { value: "toggle", label: "Alternar" },
       { value: "navigate", label: "Navegar" }, { value: "none", label: "Nada" }],
+    sensor_style: [{ value: "pills", label: "Pastilhas no rodapé (como sempre foi)" },
+      { value: "line", label: "Risco vertical na borda do vão" },
+      { value: "both", label: "Os dois" }],
+    chips_position: [{ value: "footer", label: "No rodapé" },
+      { value: "header", label: "No topo, junto dos emojis" },
+      { value: "watermark", label: "Marca d'água sobre o vidro" }],
+    watermark_align: [{ value: "bottom-left", label: "Canto inferior esquerdo" },
+      { value: "bottom-right", label: "Canto inferior direito" },
+      { value: "top-left", label: "Canto superior esquerdo" },
+      { value: "top-right", label: "Canto superior direito" },
+      { value: "center", label: "No meio" }],
+    drag_target: [{ value: "none", label: "Nada (só toque)" },
+      { value: "curtain", label: "A cortina" }, { value: "opener", label: "A folha da janela" },
+      { value: "opener_right", label: "A 2ª folha (janela de 4 folhas)" },
+      { value: "blackout", label: "O blackout (arrastar para cima e para baixo)" }],
   };
 
   const ACC_TYPES = [
@@ -1593,6 +1960,7 @@
     { id: "extras", icon: "mdi:fan", label: "Acessórios" },
     { id: "paisagem", icon: "mdi:image-filter-hdr", label: "Paisagem" },
     { id: "estilo", icon: "mdi:palette", label: "Estilo" },
+    { id: "textos", icon: "mdi:format-font", label: "Textos" },
   ];
 
   class MwWindowCurtainCardEditor extends HTMLElement {
@@ -1724,6 +2092,7 @@
       this._buildPane("extras");
       this._buildPane("paisagem");
       this._buildPane("estilo");
+      this._buildPane("textos");
 
       // prévia: o card de verdade, alimentado pelo mesmo hass
       const holder = this.querySelector(".holder");
@@ -1811,6 +2180,11 @@
         this._form("extras", p);
       } else if (id === "paisagem") {
         this._form("paisagem", p);
+      } else if (id === "textos") {
+        this._hint(p, "Tamanho e cor de cada texto do card. <b>Cor vazia</b> segue a tinta do " +
+          "papel — clara no papel escuro, escura no claro —, que é o que mantém dois cards MW " +
+          "lado a lado parecendo da mesma casa. A fonte vale para o card inteiro.");
+        this._form("textos", p);
       } else if (id === "estilo") {
         this._sec(p, "Tom de papel do card");
         const sw = document.createElement("div");
@@ -1844,13 +2218,21 @@
           { name: "sensor_left", selector: sel(opens()) },
           { name: "sensor_right", selector: sel(opens()) },
           { name: "sensor_invert", selector: { boolean: {} } },
+          { name: "sensor_style", selector: sel(OPT.sensor_style) },
+          ...(cfg.sensor_style === "line" || cfg.sensor_style === "both" ? [
+            { name: "sensor_line_width", selector: num(1, 20) },
+            { name: "sensor_line_inset", selector: num(0, 30) },
+          ] : []),
         ] },
         { name: "", type: "expandable", title: "Controles e ações", schema: [
           { name: "controls", selector: sel(OPT.controls) },
           { name: "control_labels", selector: { boolean: {} } },
+          { name: "controls_inset", selector: num(0, 40) },
           { name: "tap_action", selector: sel(OPT.actions) },
           { name: "hold_action", selector: sel(OPT.actions) },
           { name: "navigation_path", selector: { text: {} } },
+          { name: "drag_target", selector: sel(OPT.drag_target) },
+          { name: "confirm_accessory", selector: { boolean: {} } },
         ] },
       ];
 
@@ -1860,6 +2242,14 @@
         { name: "curtain_texture", selector: sel(OPT.curtain_texture) },
         { name: "curtain_dark", selector: { boolean: {} } },
         { name: "curtain_rod", selector: { boolean: {} } },
+        { name: "", type: "expandable", title: "Tamanho da cortina e do varão", schema: [
+          { name: "curtain_overhang", selector: num(0, 60) },
+          { name: "curtain_top", selector: num(0, 40) },
+          { name: "curtain_drop", selector: num(0, 60) },
+          { name: "rod_offset", selector: num(0, 40) },
+          { name: "rod_extend", selector: num(0, 60) },
+          { name: "rod_thickness", selector: { number: { min: 1, max: 16, step: 0.5, mode: "box" } } },
+        ] },
         { name: "blackout", selector: sel(covers()) },
         { name: "blackout_dark", selector: { boolean: {} } },
       ];
@@ -1870,6 +2260,11 @@
         { name: "battery", selector: { entity: { domain: "sensor", device_class: "battery" } } },
         { name: "battery_auto", selector: { boolean: {} } },
         { name: "show_footer", selector: { boolean: {} } },
+        { name: "chips_position", selector: sel(OPT.chips_position) },
+        ...(cfg.chips_position === "watermark" ? [
+          { name: "watermark_align", selector: sel(OPT.watermark_align) },
+          { name: "watermark_opacity", selector: { number: { min: 0.1, max: 1, step: 0.05, mode: "box" } } },
+        ] : []),
         { name: "", type: "expandable", title: "Efeito no vidro", schema: [
           { name: "fx", selector: sel(OPT.fx) },
           { name: "fx_hot", selector: num(0, 50, "°C") },
@@ -1901,10 +2296,37 @@
         { name: "animate", selector: { boolean: {} } },
       ];
 
+      if (id === "textos") {
+        const par = (n) => [
+          { name: `font_${n}`, selector: { number: { min: 6, max: 60, step: 1, mode: "box", unit_of_measurement: "px" } } },
+          { name: `color_${n}`, selector: { text: {} } },
+        ];
+        return [
+          { name: "font_family", selector: { text: {} } },
+          ...par("title"), ...par("summary"),
+          { name: "font_badge", selector: { number: { min: 8, max: 40, step: 1, mode: "box", unit_of_measurement: "px" } } },
+          { name: "", type: "expandable", title: "Pastilhas e controles", schema: [
+            ...par("chip"), ...par("control"), ...par("percent"),
+          ] },
+          { name: "", type: "expandable", title: "Acessórios e marca d'água", schema: [
+            ...par("accessory"), ...par("watermark"),
+          ] },
+        ];
+      }
+
       // estilo
       return [
         { name: "paper_dark", selector: { boolean: {} } },
         { name: "depth", selector: sel(OPT.depth) },
+        { name: "border_style", selector: sel(OPT.border_style) },
+        ...(cfg.border_style === "soft" || cfg.border_style === "glow" ? [
+          { name: "border_width", selector: num(1, 24) },
+          { name: "border_color", selector: { text: {} } },
+          { name: "hover_glow", selector: { boolean: {} } },
+        ] : []),
+        ...(cfg.border_style === "glow"
+          ? [{ name: "border_glow", selector: { number: { min: 0, max: 1, step: 0.05, mode: "box" } } }]
+          : []),
         { name: "frame_tone", selector: sel(OPT.frame_tone) },
         { name: "scene_height", selector: num(120, 420) },
         { name: "padding", selector: num(0, 40) },
@@ -2165,7 +2587,7 @@
     documentationURL: "https://github.com/visaodeempresa/mw-ha-window-curtain-card",
   });
 
-  console.info("%c MW-WINDOW-CURTAIN-CARD %c 0.1.0 ",
+  console.info("%c MW-WINDOW-CURTAIN-CARD %c 0.2.0 ",
     "background:#1a1a1a;color:#fdfaf3;font-weight:700;",
     "background:#7ec8f2;color:#1a1a1a;font-weight:700;");
 

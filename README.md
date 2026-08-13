@@ -23,13 +23,20 @@ sensores estão dizendo agora.
 
 ![Seis janelas em estados diferentes](docs/exemplos.png)
 
-Da esquerda para a direita, em cima: a **sala** de 4 folhas meio-abertas com
-cortina de linho, blackout e tubo de ar dos dois lados; a **suíte** em papel
-violeta escuro, de noite, com a cidade acesa lá fora e cortina de veludo; a
-**cozinha** com 33 °C — o ar treme no vidro — e a ventoinha solar girando.
-Embaixo: o **quarto** com 86 % de umidade (chove, e a gota escorre no vidro) e
-cortina de juta; o **escritório** a 9 °C com esquadria de alumínio; e uma
-sacada com cortina de **voil**, que é translúcida de verdade.
+Primeira fila: a **sala** de 4 folhas meio-abertas com cortina de linho,
+blackout e tubo de ar dos dois lados; a **suíte** em papel violeta escuro, de
+noite, com a cidade acesa lá fora e cortina de veludo; a **cozinha** com 33 °C
+— o ar treme no vidro — e a ventoinha solar girando.
+
+Segunda fila: o **quarto** com 86 % de umidade (chove, e a gota escorre no
+vidro) e cortina de juta; o **escritório** a 9 °C com esquadria de alumínio; e
+a **moldura suave com halo**, com a cor tirada sozinha do papel violeta.
+
+Terceira fila: a moldura suave em papel claro; o **risco vertical** do sensor
+(verde aberto, vermelho fechado) com as pastilhas no topo e a cortina sobrando
+para fora do vão; e as pastilhas como **marca d'água** sobre o vidro, com
+fonte serifada. Por último, uma sacada com cortina de **voil**, translúcida de
+verdade.
 
 Arquivo único, **sem build**: `dist/mw-window-curtain-card.js` é fonte e
 artefato. JS puro + `<ha-form>` do Home Assistant, sem dependência externa.
@@ -195,17 +202,116 @@ Tipos: `exhaust` · `mini_fan` · `solar_fan` · `socket` · `sensor` · `light`
 O tubo do ar-condicionado é campo próprio, porque ele nasce da esquadria:
 `ac_duct: none | left | right | both`, com `ac_entity` para o sopro animado.
 
+## Arrastar, e perguntar antes
+
+```yaml
+drag_target: curtain       # none | opener | opener_right | curtain | blackout
+confirm_accessory: true    # o acessório pergunta antes de acionar
+```
+
+Com `drag_target`, arrastar o dedo pela cena move a folha, a cortina ou o
+blackout (esse na vertical). O desenho segue o dedo na hora e o serviço só é
+chamado **ao soltar** — arrastar não vira uma enxurrada de chamadas ao HA. O
+arrasto vence o toque: passou de 6 px, o `tap_action` não dispara.
+
+A confirmação é um painel sobre a cena, com o nome do que vai acontecer
+(«Desligar EXAUSTOR DA SUÍTE?»). Preferi isso a «toque duas vezes» porque
+acessório é alvo pequeno: exigir pontaria duas vezes seria pior, não mais
+seguro.
+
+## Sensores: pastilha ou risco
+
+```yaml
+sensor_style: line         # pills (padrão) | line | both
+sensor_line_width: 5
+sensor_line_inset: 0
+```
+
+`line` desenha um risco vertical na borda do vão — **verde aberto, vermelho
+fechado** —, que é a leitura de relance que a pastilha do rodapé não dá. O
+risco é desenhado por último, na frente até da cortina: indicador que some
+atrás do pano não indica nada.
+
+## Onde ficam temperatura, umidade e bateria
+
+```yaml
+chips_position: watermark  # footer (padrão) | header | watermark
+watermark_align: bottom-left
+watermark_opacity: 0.55
+font_watermark: 26
+```
+
+No rodapé, no topo junto dos emojis, ou como **marca d'água** sobre o vidro.
+Na marca d'água as pastilhas empilham (lado a lado elas se atropelam) e as de
+«Esq./Dir.» somem — para isso existe o risco vertical.
+
+## A cortina cobre mais que a janela
+
+Porque cortina de verdade cobre. Tudo em unidades do desenho — o vão tem 250
+de largura por 166 de altura, então `12` é mais ou menos um palmo:
+
+```yaml
+curtain_overhang: 18   # sobra de cada lado
+curtain_top: 10        # começa acima do vão
+curtain_drop: 14       # desce abaixo do vão
+rod_offset: 8          # sobe o varão
+rod_extend: 26         # varão passando de cada lado
+rod_thickness: 6
+```
+
+A cortina é desenhada **fora do recorte do vão e na frente da esquadria**, que
+é onde o pano fica de verdade.
+
 ## Aparência
 
 ```yaml
 paper: violet-5        # 49 tons de papel encardido + o creme
 paper_dark: true       # a rampa escura equivalente, mesmas chaves
 depth: 3d              # flat | soft | 3d
+border_style: glow     # hairline (padrão) | soft | glow | none
+border_width: 5
+border_color: ''       # vazio = tirada do próprio tom de papel
+hover_glow: true       # acende ao passar o mouse (desktop)
 frame_tone: madeira    # auto | claro | escuro | branco | madeira | aluminio
 radius_tl: 4
 radius_bl: 52          # os cantos que antes eram card_mod na mão
+controls_inset: 12     # recuo dos controles, para não bater na curva
 scene_height: 300      # teto de altura; a largura segue a proporção
 ```
+
+### A moldura suave, e o que ela custa
+
+`border_style: soft` põe a moldura clara em volta do card, e `glow` acrescenta
+o halo. A cor sai do **próprio papel**: mesma matiz, afastada em luminosidade
+— no papel escuro ela clareia (é o lilás), no claro ela escurece. Por isso
+não é preciso acertar a cor na mão a cada tom novo.
+
+Sobre o peso, que é a pergunta certa a fazer: **a moldura é de graça**. Ela é
+um `border` de verdade, acompanha o `border-radius` sozinho e é pintada uma
+vez. O halo é um `box-shadow` estático — também pintado uma vez.
+
+O que ficou **de fora de propósito**, e é o que pesa no `card_mod` equivalente:
+
+- `backdrop-filter: blur(8px)` — custo por quadro, multiplicado por card na
+  tela. É o item caro da lista, não a sombra.
+- `transition: all 0.3s` — animaria a sombra a cada mudança de estado do HA,
+  não só no hover. Aqui o `hover_glow` transiciona **apenas** `box-shadow` e
+  `border-color`, e só do card sob o mouse.
+
+## Textos
+
+Uma aba inteira do editor: tamanho e cor de cada texto (nome, resumo,
+pastilhas, rótulo do controle, porcentagem, acessório, marca d'água), mais a
+família de fonte do card inteiro.
+
+```yaml
+font_family: "Georgia, 'Times New Roman', serif"
+font_title: 16
+color_title: '#7a4a12'
+```
+
+**Cor vazia segue a tinta do papel** — clara no papel escuro, escura no claro.
+É o que mantém dois cards MW lado a lado parecendo da mesma casa.
 
 ## Desempenho
 
