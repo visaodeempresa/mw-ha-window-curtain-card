@@ -1,0 +1,97 @@
+# SUÍTE 4.0 (/home-9-0-suite) e SALA 4.0 (/home-9-0-sala) com a cortina
+# passando da janela — como nas cortinas de casa, que sobram dos lados e
+# descem abaixo do peitoril.
+#
+# As medidas são em unidades do desenho: o vão tem 250 de largura por 166 de
+# altura, então 20 é mais ou menos um palmo de sobra.
+# Entidades conferidas contra /api/states em 12/08/2026.
+
+# ─── SUÍTE 4.0 ───
+type: custom:mw-window-curtain-card
+name: JANELA DA SUÍTE
+opener: cover.0xbc026efffe0b49f4
+sensor_left: binary_sensor.suite_janela_esquerda_da_suite
+sensor_right: binary_sensor.suite_janela_direita_da_suite
+temperature: sensor.temperatura_da_janela_da_suite
+humidity: sensor.umidade_da_janela_da_suite
+curtain: cover.cortina_da_suite
+curtain_texture: veludo
+curtain_paper: violet-4
+curtain_dark: true
+curtain_overhang: 20
+curtain_top: 12
+curtain_drop: 30
+rod_offset: 6
+rod_extend: 24
+rod_thickness: 6
+paper: violet-5
+paper_dark: true
+border_style: glow
+border_width: 4
+border_glow: 0.4
+hover_glow: true
+radius_tl: 14
+radius_tr: 14
+radius_br: 14
+radius_bl: 52
+sensor_style: line
+chips_position: header
+controls_inset: 12
+drag_target: curtain
+confirm_accessory: true
+accessories:
+- type: exhaust
+  entity: fan.exaustor_da_suite
+  label: Exaustor
+  x: 90
+  y: 8
+  size: 24
+- type: socket
+  entity: switch.t_janela_suit
+  label: Tomada
+  x: 4
+  y: 60
+  size: 22
+
+# ─── SALA 4.0 ───
+type: custom:mw-window-curtain-card
+name: JANELA DA SALA
+panes: 4
+slide: out
+opener: cover.janela_esquerda_da_sala
+opener_right: cover.janela_direita_da_sala
+sensor_left: binary_sensor.janela_esquerda_da_sala
+sensor_right: binary_sensor.janela_direita_da_sala
+temperature: sensor.temperatura_da_janela_da_sala
+humidity: sensor.umidade_da_janela_da_sala
+curtain: cover.cortina_da_sala
+curtain_texture: linho
+curtain_paper: orange-2
+curtain_overhang: 22
+curtain_top: 12
+curtain_drop: 32
+rod_offset: 6
+rod_extend: 26
+rod_thickness: 6
+blackout: cover.blackout_da_sala
+blackout_paper: orange-7
+blackout_dark: true
+paper: orange-3
+border_style: soft
+border_width: 4
+radius_tl: 14
+radius_tr: 14
+radius_br: 14
+radius_bl: 14
+sensor_style: line
+chips_position: header
+controls_inset: 12
+drag_target: curtain
+scenery_skyline: cidade
+accessories:
+- type: socket
+  entity: switch.tomada_do_umidificador_da_janela_da_sala
+  label: Umidificador
+  x: 4
+  y: 62
+  size: 22
