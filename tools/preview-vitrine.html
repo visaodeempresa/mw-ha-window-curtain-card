@@ -1,0 +1,51 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Vitrine /mw-components/janelas — conferência</title>
+<!-- Os cards EXATOS lidos de volta do servidor, com os estados reais.
+     Prova que a aba publicada renderiza; a tela do HA é do dono. -->
+<style>
+  body{margin:0;padding:16px;background:#171a20;color:#dde;
+    font:12px/1.4 -apple-system,system-ui,sans-serif;}
+  h1{font-size:13px;letter-spacing:1px;text-transform:uppercase;opacity:.6;margin:0 0 12px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+  .cap{font-size:10.5px;opacity:.55;margin:0 0 5px 2px;}
+  .erro{color:#ff8a80;font-weight:700;}
+</style>
+<h1>/mw-components/janelas — 31 cards do servidor</h1>
+<div class="grid" id="g"></div>
+<script src="../dist/mw-window-curtain-card.js"></script>
+<script>
+customElements.define("ha-card", class extends HTMLElement{
+  connectedCallback(){ if(this.shadowRoot) return;
+    this.attachShadow({mode:"open"}).innerHTML=
+      `<style>:host{display:block;box-sizing:border-box;}</style><slot></slot>`;}});
+const G={"mdi:fan":"🌀","mdi:power-socket-eu":"🔌","mdi:thermometer":"🌡",
+ "mdi:water-percent":"💧","mdi:window-open-variant":"▤","mdi:curtains":"▥",
+ "mdi:blinds-horizontal":"▦","mdi:chevron-up":"▲","mdi:chevron-down":"▼",
+ "mdi:stop":"■","mdi:solar-power-variant":"☀︎"};
+customElements.define("ha-icon", class extends HTMLElement{
+  static get observedAttributes(){return["icon"];}
+  connectedCallback(){this._u();} attributeChangedCallback(){this._u();}
+  _u(){ if(!this.shadowRoot) this.attachShadow({mode:"open"});
+    const i=this.getAttribute("icon")||"";
+    this.shadowRoot.innerHTML=`<style>:host{display:inline-grid;place-items:center;
+      line-height:1;font-size:var(--mdc-icon-size,16px);}</style><span>${
+      G[i]||(i.startsWith("mdi:battery")?"▮":"◻︎")}</span>`;}});
+fetch("vitrine.json").then(r=>r.json()).then(d=>{
+  const hass={states:d.states,entities:{},devices:{},areas:{},localize:k=>k,callService(){}};
+  const g=document.getElementById("g");
+  let erros=0;
+  d.cards.forEach((cfg,i)=>{
+    const cell=document.createElement("div");
+    const p=document.createElement("p");
+    p.className="cap"; p.textContent=`${i+1}. ${cfg.name||"(sem nome)"}`;
+    cell.appendChild(p);
+    try{
+      const c=document.createElement("mw-window-curtain-card");
+      c.setConfig(cfg); c.hass=hass; cell.appendChild(c);
+    }catch(e){ erros++; p.className="cap erro"; p.textContent=`${i+1}. ERRO: ${e.message}`; }
+    g.appendChild(cell);
+  });
+  window.__erros=erros; window.__total=d.cards.length; window.__pronto=true;
+});
+</script>
