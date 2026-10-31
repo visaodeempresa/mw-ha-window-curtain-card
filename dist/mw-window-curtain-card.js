@@ -81,6 +81,36 @@
     : { text: "rgba(28, 25, 20, 0.92)", dim: "rgba(28, 25, 20, 0.58)", line: "rgba(0, 0, 0, 0.14)" });
   // <<< paper-dark-palette v1
 
+
+  // >>> paper-grafite-palette v1 — fonte canônica: /Volumes/SSD-T1-01/CLAUDE-SSD/IA/lib/paper-grafite-palette/paper-grafite-palette.js
+  // 7 tons de grafite (1 = mais claro, 7 = mais encardido). Matiz 30° da
+  // casa, saturação 6–13%: neutro de propósito — grafite não é colorido.
+  // A saturação sobe devagar com a escuridão, mas JAMAIS alcança a escala
+  // das matizes encardidas (que sobe a 28%): a linha grafite é neutra.
+  const GRAFITE_HUE = 30;
+  const GRAFITE_TONES = [[26, 6], [22, 7], [19, 8], [16, 9], [13, 10], [10, 12], [8, 13]];
+  const GRAFITE_DEFAULT = "linear-gradient(145deg, #2b2825, #161411)";
+  const GRAFITE_INK = "rgba(247, 244, 236, 0.94)";
+  const isGrafite = (key) => /^grafite-[1-7]$/.test(String(key || "").trim());
+  const grafiteGradient = (key) => {
+    const m = isGrafite(key) && /^grafite-([1-7])$/.exec(String(key).trim());
+    if (!m) return GRAFITE_DEFAULT;
+    const [l, s] = GRAFITE_TONES[+m[1] - 1];
+    return `linear-gradient(145deg, hsl(${GRAFITE_HUE}, ${s}%, ${l}%), hsl(${GRAFITE_HUE}, ${s + 4}%, ${Math.max(4, l - 6)}%))`;
+  };
+  const grafiteStops = (key) => {
+    const m = isGrafite(key) && /^grafite-([1-7])$/.exec(String(key).trim());
+    if (!m) return ["#2b2825", "#161411"];
+    const [l, s] = GRAFITE_TONES[+m[1] - 1];
+    return [`hsl(${GRAFITE_HUE}, ${s}%, ${l}%)`, `hsl(${GRAFITE_HUE}, ${s + 4}%, ${Math.max(4, l - 6)}%)`];
+  };
+  const grafiteOptions = () => GRAFITE_TONES.map((t, i) => ({
+    value: `grafite-${i + 1}`,
+    label: `Grafite · tom ${i + 1}${i === 0 ? " (mais claro)" : i === 6 ? " (mais encardido)" : ""}`,
+  }));
+  // <<< paper-grafite-palette v1
+
+
   // >>> mw-climate-scale v1 — fonte canônica: /Volumes/SSD-T1-01/CLAUDE-SSD/IA/lib/mw-climate-scale/mw-climate-scale.js
   // Escala canônica de cor por temperatura (°C) e umidade relativa (%).
   // Regra: IA/rules/global/40-cores-de-temperatura-e-umidade.md.
@@ -735,12 +765,16 @@
 
     _build() {
       const c = this._config;
-      const dark = c.paper_dark === true;
+      // grafite: modo escuro assumido, SENÃO dependência de tema/interruptor —
+      // a chave escolhida é a cor que lê, sempre.
+      const dark = c.paper_dark === true || isGrafite(c.paper);
       const ink = paperInk(dark);
-      const paperBg = dark ? paperDarkGradient(c.paper) : paperGradient(c.paper);
+      const paperBg = isGrafite(c.paper) ? grafiteGradient(c.paper)
+        : dark ? paperDarkGradient(c.paper) : paperGradient(c.paper);
       const tex = TEXTURES[c.curtain_texture] || TEXTURES.paper;
       const curtainBg = c.curtain_paper
-        ? (c.curtain_dark ? paperDarkGradient(c.curtain_paper) : paperGradient(c.curtain_paper))
+        ? (isGrafite(c.curtain_paper) ? grafiteGradient(c.curtain_paper)
+          : c.curtain_dark ? paperDarkGradient(c.curtain_paper) : paperGradient(c.curtain_paper))
         : paperBg;
       const curtainStop = this._gradientStops(c.curtain_paper || c.paper,
         c.curtain_paper ? c.curtain_dark : dark);
@@ -794,7 +828,8 @@
     _gradientStops(key, dark) {
       // O papel vem como CSS linear-gradient e o SVG precisa das duas paradas
       // separadas — extrair é mais honesto que manter duas tabelas de cor.
-      const g = dark ? paperDarkGradient(key) : paperGradient(key);
+      const g = isGrafite(key) ? grafiteGradient(key)
+        : dark ? paperDarkGradient(key) : paperGradient(key);
       const m = g.match(/(hsl\([^)]*\)|#[0-9a-f]{3,8})/gi) || [];
       return { a: m[0] || (dark ? "#2b2825" : "#fdfaf3"), b: m[1] || (dark ? "#161411" : "#e8e3d8") };
     }
@@ -2414,6 +2449,8 @@ ${c.hover_glow && bs !== "none" ? `
           html += `<b>${h[1]}</b>`;
           for (let i = 1; i <= 7; i++) html += chip(`${h[0]}-${i}`, `${h[1]} tom ${i}`);
         }
+        html += `<b>Grafite</b>`;
+        for (let i = 1; i <= 7; i++) html += chip(`grafite-${i}`, `Grafite tom ${i}`);
         grid.innerHTML = html;
         grid.querySelectorAll(".wc-chip").forEach((b) => {
           b.addEventListener("click", () => this._set(target, b.dataset.v));
@@ -2610,7 +2647,7 @@ ${c.hover_glow && bs !== "none" ? `
     documentationURL: "https://github.com/visaodeempresa/mw-ha-window-curtain-card",
   });
 
-  console.info("%c MW-WINDOW-CURTAIN-CARD %c 0.2.1 ",
+  console.info("%c MW-WINDOW-CURTAIN-CARD %c 0.3.0 ",
     "background:#1a1a1a;color:#fdfaf3;font-weight:700;",
     "background:#7ec8f2;color:#1a1a1a;font-weight:700;");
 
