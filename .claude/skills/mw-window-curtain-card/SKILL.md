@@ -33,8 +33,9 @@ com sintoma.
    o probe reprova se faltar uma.
 2. `node --check dist/mw-window-curtain-card.js`
 3. `node tools/probe.js` — instancia card e editor sem navegador.
-4. `IA/tools/check-embeds.sh` — os três blocos embutidos (`paper-palette v1`,
-   `paper-dark-palette v1`, `mw-climate-scale v1`) têm de bater com `IA/lib/`.
+4. `IA/tools/check-embeds.sh` — os blocos embutidos (`paper-palette v1`,
+   `paper-dark-palette v1`, `paper-grafite-palette v1`, `mw-climate-scale v1`)
+   têm de bater com `IA/lib/`.
 5. **Olhar**: bancada em `/tools/preview.html` (cena) e
    `/tools/preview-editor.html` (editor). Mudou desenho? Screenshot.
 6. Commit assinado (regra 00), branch `feature/**`, PR. **Merge é do dono.**
@@ -50,6 +51,14 @@ com sintoma.
 | silhueta nova | `skylinePath()` + opção em `OPT.scenery_skyline` |
 | tipo de acessório | `ACC_TYPES` + ícone em `_accessory()` |
 | aba do editor | `TABS` + `_buildPane()` + `_schemaFor()` |
+
+## Linha grafite (v0.3.0)
+
+`grafite-1..7` em `paper`, `curtain_paper` e `blackout_paper`, com roteamento
+`isGrafite` primeiro (paletas v1 intactas). A chave grafite **assume modo
+escuro sozinha** — não depende de tema, estado dark/light do HA nem
+`paper_dark`: quem escolhe `grafite-4` lê `grafite-4`, sempre. Amostrário do
+editor ganha a fileira Grafite appendada, sem mover nada existente.
 
 ## Armadilhas
 
