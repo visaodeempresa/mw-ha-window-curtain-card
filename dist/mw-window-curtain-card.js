@@ -84,11 +84,11 @@
 
   // >>> paper-grafite-palette v1 — fonte canônica: /Volumes/SSD-T1-01/CLAUDE-SSD/IA/lib/paper-grafite-palette/paper-grafite-palette.js
   // 7 tons de grafite (1 = mais claro, 7 = mais encardido). Matiz 30° da
-  // casa, saturação 6–13%: neutro de propósito — grafite não é colorido.
+  // casa, saturação 5–13%: neutro de propósito — grafite não é colorido.
   // A saturação sobe devagar com a escuridão, mas JAMAIS alcança a escala
   // das matizes encardidas (que sobe a 28%): a linha grafite é neutra.
   const GRAFITE_HUE = 30;
-  const GRAFITE_TONES = [[26, 6], [22, 7], [19, 8], [16, 9], [13, 10], [10, 12], [8, 13]];
+  const GRAFITE_TONES = [[38, 5], [30, 6], [22, 7], [16, 9], [13, 10], [10, 12], [8, 13]];
   const GRAFITE_DEFAULT = "linear-gradient(145deg, #2b2825, #161411)";
   const GRAFITE_INK = "rgba(247, 244, 236, 0.94)";
   const isGrafite = (key) => /^grafite-[1-7]$/.test(String(key || "").trim());
@@ -2647,7 +2647,7 @@ ${c.hover_glow && bs !== "none" ? `
     documentationURL: "https://github.com/visaodeempresa/mw-ha-window-curtain-card",
   });
 
-  console.info("%c MW-WINDOW-CURTAIN-CARD %c 0.3.0 ",
+  console.info("%c MW-WINDOW-CURTAIN-CARD %c 0.4.0 ",
     "background:#1a1a1a;color:#fdfaf3;font-weight:700;",
     "background:#7ec8f2;color:#1a1a1a;font-weight:700;");
 
