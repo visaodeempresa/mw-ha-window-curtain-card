@@ -329,12 +329,14 @@ ok("todo campo do editor tem rótulo em pt-BR", semRotulo.length === 0, semRotul
 // Campo com default e sem lugar no editor é campo que só existe no YAML.
 // A lista abaixo é a exceção consciente: `area` é do próprio editor, e os
 // tons de papel têm grade de amostras clicáveis em vez de campo no ha-form.
-const SEM_HA_FORM = ["area", "accessories", "paper", "curtain_paper", "blackout_paper"];
+const SEM_HA_FORM = ["area", "accessories", "paper", "paper_closed", "curtain_paper", "blackout_paper"];
 const soYaml = Object.keys(DEFAULTS).filter((n) => !declared.includes(n) && !SEM_HA_FORM.includes(n));
 ok("nenhum campo esquecido fora do editor", soYaml.length === 0, soYaml.join(", "));
 
 ed._set("paper", "blue-4");
 ok("clique na amostra grava o papel", ed._cfg.paper === "blue-4");
+ed._set("paper_closed", "grafite-1");
+ok("clique na amostra grava o papel quando fechada", ed._cfg.paper_closed === "grafite-1");
 ed._addAcc({ x: 12, y: 40 });
 ok("largar no quadro cria acessório",
   ed._cfg.accessories.length === 1 && ed._cfg.accessories[0].x === 12);
