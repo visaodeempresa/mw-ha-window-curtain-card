@@ -267,6 +267,7 @@ A cortina é desenhada **fora do recorte do vão e na frente da esquadria**, que
 ```yaml
 paper: violet-5        # 49 tons de papel encardido + o creme
 paper_dark: true       # a rampa escura equivalente, mesmas chaves
+paper_closed: grafite-1  # papel quando a janela está FECHADA (vazio = sempre `paper`)
 depth: 3d              # flat | soft | 3d
 border_style: glow     # hairline (padrão) | soft | glow | none
 border_width: 5
@@ -278,6 +279,22 @@ radius_bl: 52          # os cantos que antes eram card_mod na mão
 controls_inset: 12     # recuo dos controles, para não bater na curva
 scene_height: 300      # teto de altura; a largura segue a proporção
 ```
+
+### Papel que acompanha a janela
+
+Com `paper_closed`, o card troca de papel sozinho: **fechada** usa `paper_closed`,
+**aberta** usa `paper`. Mesma regra do `mw-tab-card`, então a casca e o miolo
+mudam juntos — o `mw-tab-card` em volta escurece para `grafite-1` quando a
+janela fecha, e o card da janela acompanha:
+
+```yaml
+paper: paper             # aberta: o creme
+paper_closed: grafite-1  # fechada: a linha grafite (tinta clara automática)
+```
+
+Aberta = qualquer abridor (`opener`/`opener_right`) acima de 1 % **ou** qualquer
+sensor (`sensor_left`/`sensor_right`) aberto. Sem abridor nem sensor, vale a
+cortina/blackout. A troca regrava só o `<style>` — a cena não é remontada.
 
 ### A moldura suave, e o que ela custa
 

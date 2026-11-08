@@ -83,12 +83,12 @@
 
 
   // >>> paper-grafite-palette v1 — fonte canônica: /Volumes/SSD-T1-01/CLAUDE-SSD/IA/lib/paper-grafite-palette/paper-grafite-palette.js
-  // 7 tons de grafite (1 = mais claro, 7 = mais encardido). Matiz 30° da
-  // casa, saturação 6–13%: neutro de propósito — grafite não é colorido.
+  // 7 tons de grafite (1 = mais claro ainda, 7 = mais encardido). Matiz 30° da
+  // casa, saturação 4–13%: neutro de propósito — grafite não é colorido.
   // A saturação sobe devagar com a escuridão, mas JAMAIS alcança a escala
   // das matizes encardidas (que sobe a 28%): a linha grafite é neutra.
   const GRAFITE_HUE = 30;
-  const GRAFITE_TONES = [[26, 6], [22, 7], [19, 8], [16, 9], [13, 10], [10, 12], [8, 13]];
+  const GRAFITE_TONES = [[52, 4], [42, 5], [34, 6], [26, 7], [18, 9], [12, 11], [8, 13]];
   const GRAFITE_DEFAULT = "linear-gradient(145deg, #2b2825, #161411)";
   const GRAFITE_INK = "rgba(247, 244, 236, 0.94)";
   const isGrafite = (key) => /^grafite-[1-7]$/.test(String(key || "").trim());
@@ -106,7 +106,7 @@
   };
   const grafiteOptions = () => GRAFITE_TONES.map((t, i) => ({
     value: `grafite-${i + 1}`,
-    label: `Grafite · tom ${i + 1}${i === 0 ? " (mais claro)" : i === 6 ? " (mais encardido)" : ""}`,
+    label: `Grafite · tom ${i + 1}${i === 0 ? " (mais claro ainda)" : i === 1 ? " (claro)" : i === 6 ? " (mais encardido)" : ""}`,
   }));
   // <<< paper-grafite-palette v1
 
@@ -253,6 +253,7 @@
 
     // --- aparência ---
     paper: "paper",
+    paper_closed: "",            // vazio = usa o mesmo papel do card; se definido (ex: 'grafite-1'), usa quando fechada
     paper_dark: false,
     depth: "3d",                 // flat | soft | 3d
     // hairline = o fio discreto de sempre · soft = moldura clara acompanhando
@@ -761,29 +762,64 @@
       return "";
     }
 
+    _isClosed(r) {
+      if (!r) return false;
+      const c = this._config || {};
+      const hasOp = Boolean(c.opener || c.opener_right);
+      const hasSensors = Boolean(c.sensor_left || c.sensor_right);
+      const hasCurtain = Boolean(c.curtain || c.blackout);
+
+      let opOpen = false;
+      if (r.op1 && r.op1.pos > 1) opOpen = true;
+      if (r.op2 && r.op2.pos > 1) opOpen = true;
+
+      let sensorOpen = false;
+      if (r.sl === true || r.sr === true) sensorOpen = true;
+
+      let curtainOpen = false;
+      if (r.cur && r.cur.pos > 1) curtainOpen = true;
+      if (r.bo && r.bo.pos > 1) curtainOpen = true;
+
+      if (hasOp && hasSensors) return !opOpen && !sensorOpen;
+      if (hasOp) return !opOpen;
+      if (hasSensors) return !sensorOpen;
+      if (hasCurtain) return !curtainOpen;
+      return false;
+    }
+
+    _resolveActivePaper(r) {
+      const c = this._config || {};
+      const closedKey = c.paper_closed || c.paper_color_off;
+      if (closedKey && this._isClosed(r)) return closedKey;
+      return c.paper_open || c.paper_color_on || c.paper || "paper";
+    }
+
     /* ---------------------------- montagem ---------------------------- */
 
     _build() {
       const c = this._config;
+      const r = this._hass ? this._read() : null;
+      const activePaper = this._resolveActivePaper(r);
+      this._currentPaperKey = activePaper;
       // grafite: modo escuro assumido, SENÃO dependência de tema/interruptor —
       // a chave escolhida é a cor que lê, sempre.
-      const dark = c.paper_dark === true || isGrafite(c.paper);
+      const dark = c.paper_dark === true || isGrafite(activePaper);
       const ink = paperInk(dark);
-      const paperBg = isGrafite(c.paper) ? grafiteGradient(c.paper)
-        : dark ? paperDarkGradient(c.paper) : paperGradient(c.paper);
+      const paperBg = isGrafite(activePaper) ? grafiteGradient(activePaper)
+        : dark ? paperDarkGradient(activePaper) : paperGradient(activePaper);
       const tex = TEXTURES[c.curtain_texture] || TEXTURES.paper;
       const curtainBg = c.curtain_paper
         ? (isGrafite(c.curtain_paper) ? grafiteGradient(c.curtain_paper)
           : c.curtain_dark ? paperDarkGradient(c.curtain_paper) : paperGradient(c.curtain_paper))
         : paperBg;
-      const curtainStop = this._gradientStops(c.curtain_paper || c.paper,
+      const curtainStop = this._gradientStops(c.curtain_paper || activePaper,
         c.curtain_paper ? c.curtain_dark : dark);
       const boStop = this._gradientStops(c.blackout_paper, c.blackout_dark !== false);
       const frameTone = FRAME_TONES[c.frame_tone] || (dark ? FRAME_TONES.escuro : FRAME_TONES.claro);
 
       if (!this.shadowRoot) this.attachShadow({ mode: "open" });
       this.shadowRoot.innerHTML =
-        `<style>${this._css(c, dark, ink, paperBg, frameTone, tex)}</style>` +
+        `<style id="wc-style">${this._css(c, dark, ink, paperBg, frameTone, tex, activePaper)}</style>` +
         `<ha-card class="root">${this._header(c)}${this._scene(c, tex, curtainStop, boStop)}` +
         `${this._footer(c)}${this._controls(c)}</ha-card>`;
 
@@ -1127,7 +1163,7 @@
 
     /* ------------------------------ CSS ------------------------------ */
 
-    _css(c, dark, ink, paperBg, fr, tex) {
+    _css(c, dark, ink, paperBg, fr, tex, paperKey) {
       const vb = this._viewBox(c);
       const depth = c.depth || "3d";
       const shadow = depth === "flat" ? "none"
@@ -1147,7 +1183,7 @@
        * Fora daqui de propósito: backdrop-filter (caro de verdade) e
        * `transition: all`, que animaria sombra a cada mudança de estado. */
       const bs = c.border_style || "hairline";
-      const edge = c.border_color || paperEdge(c.paper, dark);
+      const edge = c.border_color || paperEdge(paperKey || c.paper, dark);
       const bw = clamp(numOr(c.border_width, 3), 0, 24);
       const glow = clamp(numOr(c.border_glow, 0.35), 0, 1);
       const border = bs === "none" ? "none"
@@ -1431,6 +1467,19 @@ ${c.hover_glow && bs !== "none" ? `
       ]);
       if (!force && sig === this._sig) return;
       this._sig = sig;
+
+      const activePaper = this._resolveActivePaper(r);
+      if (activePaper !== this._currentPaperKey) {
+        this._currentPaperKey = activePaper;
+        const dark = c.paper_dark === true || isGrafite(activePaper);
+        const ink = paperInk(dark);
+        const paperBg = isGrafite(activePaper) ? grafiteGradient(activePaper)
+          : dark ? paperDarkGradient(activePaper) : paperGradient(activePaper);
+        const tex = TEXTURES[c.curtain_texture] || TEXTURES.paper;
+        const frameTone = FRAME_TONES[c.frame_tone] || (dark ? FRAME_TONES.escuro : FRAME_TONES.claro);
+        const styleEl = this.shadowRoot.getElementById("wc-style");
+        if (styleEl) styleEl.textContent = this._css(c, dark, ink, paperBg, frameTone, tex, activePaper);
+      }
 
       const S = this._root.style;
       const panes = c.panes === 4 ? 4 : 2;
@@ -1913,6 +1962,7 @@ ${c.hover_glow && bs !== "none" ? `
     fx_rain: "Chuva a partir de (% UR)",
     fx_dew: "Orvalho a partir de (% UR)",
     paper: "Tom de papel do card",
+    paper_closed: "Tom de papel quando fechada",
     paper_dark: "Papel escuro",
     depth: "Relevo",
     border_style: "Borda do card",
@@ -2249,6 +2299,11 @@ ${c.hover_glow && bs !== "none" ? `
         sw.className = "wc-sw";
         sw.dataset.target = "paper";
         p.appendChild(sw);
+        this._sec(p, "Tom de papel quando fechada");
+        const swClosed = document.createElement("div");
+        swClosed.className = "wc-sw";
+        swClosed.dataset.target = "paper_closed";
+        p.appendChild(swClosed);
         this._form("estilo", p);
       }
     }
@@ -2426,7 +2481,7 @@ ${c.hover_glow && bs !== "none" ? `
     _paintSwatches() {
       this.querySelectorAll(".wc-sw").forEach((grid) => {
         const target = grid.dataset.target;
-        const dark = target === "paper" ? this._cfg.paper_dark === true
+        const dark = (target === "paper" || target === "paper_closed") ? this._cfg.paper_dark === true
           : target === "curtain_paper" ? this._cfg.curtain_dark === true
           : this._cfg.blackout_dark !== false;
         const cur = this._cfg[target] ?? DEFAULTS[target] ?? "";
@@ -2647,7 +2702,7 @@ ${c.hover_glow && bs !== "none" ? `
     documentationURL: "https://github.com/visaodeempresa/mw-ha-window-curtain-card",
   });
 
-  console.info("%c MW-WINDOW-CURTAIN-CARD %c 0.3.0 ",
+  console.info("%c MW-WINDOW-CURTAIN-CARD %c 0.6.0 ",
     "background:#1a1a1a;color:#fdfaf3;font-weight:700;",
     "background:#7ec8f2;color:#1a1a1a;font-weight:700;");
 
